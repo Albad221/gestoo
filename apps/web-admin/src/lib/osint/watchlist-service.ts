@@ -184,7 +184,8 @@ export async function checkEuropolWanted(name: string): Promise<WatchlistCheckRe
 
     const matches = results
       .filter((r: Record<string, unknown>) => (r.score as number) > 0.7)
-      .map((r: Record<string, unknown>) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => ({
         name: r.caption as string,
         source: 'Europol',
         noticeType: 'EU Most Wanted',
@@ -241,7 +242,7 @@ export async function runAllWatchlistChecks(
   ]);
 
   // Aggregate matches
-  const allMatches: WatchlistCheckResult['data']['matches'] = [];
+  const allMatches: NonNullable<WatchlistCheckResult['data']>['matches'] = [];
 
   if (interpol.success && interpol.data?.matches) {
     allMatches.push(...interpol.data.matches);
