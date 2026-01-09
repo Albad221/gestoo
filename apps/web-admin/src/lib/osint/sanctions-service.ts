@@ -184,7 +184,8 @@ export async function checkUNSanctions(name: string): Promise<SanctionsCheckResu
     const data = await response.json();
     const matches = (data.results || [])
       .filter((r: Record<string, unknown>) => (r.score as number) > 0.7)
-      .map((r: Record<string, unknown>) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => ({
         name: r.caption as string,
         listName: 'UN Security Council',
         entityType: r.schema as string,
@@ -246,7 +247,8 @@ export async function checkEUSanctions(name: string): Promise<SanctionsCheckResu
     const data = await response.json();
     const matches = (data.results || [])
       .filter((r: Record<string, unknown>) => (r.score as number) > 0.7)
-      .map((r: Record<string, unknown>) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => ({
         name: r.caption as string,
         listName: 'EU Consolidated List',
         entityType: r.schema as string,
