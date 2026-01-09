@@ -51,4 +51,3 @@ venv/
 # Misc
 *.tgz
 .cache/
-apps/web-admin/
