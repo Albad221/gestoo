@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import truecallerjs from 'truecallerjs';
+import * as truecallerjs from 'truecallerjs';
 import crypto from 'crypto';
 import { checkEmailSites } from '@/lib/osint/email-sites-checker';
 import { checkEmailWithHolehe } from '@/lib/osint/holehe';
@@ -421,7 +421,8 @@ async function enrichFromPhone(phone: string, profile: FullProfile) {
         installationId: truecallerInstallationId,
       };
 
-      const response = await truecallerjs.search(searchData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await truecallerjs.search(searchData);
       const rawData = response.json();
 
       // Extract name
