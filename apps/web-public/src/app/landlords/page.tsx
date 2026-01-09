@@ -14,7 +14,7 @@ import {
   MessageCircle,
   ArrowRight,
   Building2,
-  IdCard,
+  Contact,
   FileCheck,
 } from 'lucide-react';
 import { SectionHeader } from '@/components/shared/section-header';
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 const requiredDocuments = [
   {
-    icon: IdCard,
+    icon: Contact,
     title: 'Carte Nationale d\'Identite (CNI)',
     description:
       'Une copie claire et lisible de votre CNI en cours de validite.',
