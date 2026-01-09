@@ -1,0 +1,366 @@
+[
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.687538",
+    "currency": "XOF",
+    "platform_id": "chez-stephane-fimela1",
+    "url": "https://www.booking.com/hotel/sn/chez-stephane-fimela1.fr.html",
+    "title": "Chez Stéphane",
+    "price": 450000,
+    "location_text": "Fimela",
+    "photos": [],
+    "property_type": "other",
+    "amenities": []
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:40.847137",
+    "currency": "XOF",
+    "platform_id": "la-yayemoise",
+    "url": "https://www.booking.com/hotel/sn/la-yayemoise.fr.html",
+    "title": "La Yayemoise",
+    "price": 221850,
+    "location_text": "Fimela",
+    "photos": [],
+    "property_type": "other",
+    "amenities": []
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:43.321313",
+    "currency": "XOF",
+    "platform_id": "la-femme-noire",
+    "url": "https://www.booking.com/hotel/sn/la-femme-noire.fr.html",
+    "title": "La Femme Noire",
+    "price": 101250,
+    "location_text": "Joal-Fadiout",
+    "rating": 3.8,
+    "photos": [],
+    "property_type": "other",
+    "amenities": []
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.339466",
+    "currency": "XOF",
+    "platform_id": "chez-didi-mbodiene",
+    "url": "https://www.booking.com/hotel/sn/chez-didi-mbodiene.fr.html",
+    "title": "Chez DiDi",
+    "price": 120000,
+    "location_text": "Mbodiène",
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/683522961.webp?k=da79bba3ed2c1278aa03ebef156400df03d8b9a171fdac112fb5ba854710c428&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.340655",
+    "currency": "XOF",
+    "platform_id": "jam",
+    "url": "https://www.booking.com/hotel/sn/jam.fr.html",
+    "title": "Jam",
+    "price": 45000,
+    "location_text": "Mbodiène",
+    "rating": 1.01,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/231385724.webp?k=d84562a2dbcb8378921887ce25d52ec5e763953b3e1b95c58a9fcd0e92a727b2&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.341534",
+    "currency": "XOF",
+    "platform_id": "chez-betty",
+    "url": "https://www.booking.com/hotel/sn/chez-betty.fr.html",
+    "title": "Chez BETTY",
+    "price": 280000,
+    "location_text": "Ngazobil",
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/623545630.webp?k=a6d0a1e71cd388a8ad5b67ea35f4c0e7ad632833c8b04e54dd40f25a4b6f2f33&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.342708",
+    "currency": "XOF",
+    "platform_id": "saloum-decouverte",
+    "url": "https://www.booking.com/hotel/sn/saloum-decouverte.fr.html",
+    "title": "Villa Saloum Decouverte",
+    "price": 875000,
+    "location_text": "Ndangane",
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/802496090.webp?k=c2b14a953d75629c465e3039afbf6c22b2d55796e5b3a8bcd8ec998db2c32e19&o="
+    ],
+    "property_type": "villa"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.343914",
+    "currency": "XOF",
+    "platform_id": "chambre-d-39-hote",
+    "url": "https://www.booking.com/hotel/sn/chambre-d-39-hote.fr.html",
+    "title": "Chambre d'hôte les vacanciers",
+    "price": 150000,
+    "location_text": "Nianing",
+    "rating": 4.6,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/95708754.webp?k=7d1d9d1c22f1b992b1f4da05468a92471bacb53fa1133f07d0228ba8dada51c8&o="
+    ],
+    "property_type": "room"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.345074",
+    "currency": "XOF",
+    "platform_id": "mdf-saloum",
+    "url": "https://www.booking.com/hotel/sn/mdf-saloum.fr.html",
+    "title": "Mdf Saloum",
+    "price": 108000,
+    "location_text": "Foundiougne",
+    "rating": 3.6,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/792818159.webp?k=58877ac1e2cc343c20c49a9bec839ba9239d05f5899f958a537c0eff4dff49d2&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.346290",
+    "currency": "XOF",
+    "platform_id": "mariama-lodge",
+    "url": "https://www.booking.com/hotel/sn/mariama-lodge.fr.html",
+    "title": "Mariama Lodge",
+    "price": 330000,
+    "location_text": "Mbodiène",
+    "rating": 505.0,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/551616706.webp?k=ecdf8a48c44698ef7f882e258b4c5488a4166464e88f2076244d686e0eb6ef85&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.347172",
+    "currency": "XOF",
+    "platform_id": "auberge-keur-mame",
+    "url": "https://www.booking.com/hotel/sn/auberge-keur-mame.fr.html",
+    "title": "Auberge Keur Ely",
+    "price": 85000,
+    "location_text": "Ouoran",
+    "rating": 4.4,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/221423270.webp?k=90ba5fcbe2c757d634982d9afb783735b5a62fe29727ebc0110b3788f627e33a&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.348266",
+    "currency": "XOF",
+    "platform_id": "studio-meule-a-mbour",
+    "url": "https://www.booking.com/hotel/sn/studio-meule-a-mbour.fr.html",
+    "title": "Chambre Meulé A Mbour",
+    "price": 75000,
+    "location_text": "M'bour",
+    "rating": 3.7,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/624366596.webp?k=6a54381dd05c3e62d57d021a8a0c48203744bc0f3bd66009fb72949cc50caef8&o="
+    ],
+    "property_type": "room"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.349056",
+    "currency": "XOF",
+    "platform_id": "chez-elisa-bour",
+    "url": "https://www.booking.com/hotel/sn/chez-elisa-bour.fr.html",
+    "title": "Chez Elisa",
+    "price": 164500,
+    "location_text": "M'bour",
+    "rating": 4.7,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/690224897.webp?k=c5541e8edf7db0be9fd35d38180448971c8f04a14936b204c4654a29ad0be376&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.349891",
+    "currency": "XOF",
+    "platform_id": "small-air-conditioned-apartment-with-private-pool",
+    "url": "https://www.booking.com/hotel/sn/small-air-conditioned-apartment-with-private-pool.fr.html",
+    "title": "Apartment with private pool",
+    "price": 174500,
+    "location_text": "Warang",
+    "rating": 4.5,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/682487501.webp?k=9650fa5e95d3b1db57d4d9fe7ccd85b9b6d6dc5ef1fc26b6387fbaa3734c814c&o="
+    ],
+    "property_type": "apartment"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.350716",
+    "currency": "XOF",
+    "platform_id": "keur-nkh",
+    "url": "https://www.booking.com/hotel/sn/keur-nkh.fr.html",
+    "title": "Keur NKH",
+    "price": 121500,
+    "location_text": "Ouoran",
+    "rating": 3.5,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/794796615.webp?k=444ac61580fe4e58b0c1b53199f1506bcc8faef955d4ed111a5a99e36d657395&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.351550",
+    "currency": "XOF",
+    "platform_id": "appart-avec-spa-jacuzzi-prive",
+    "url": "https://www.booking.com/hotel/sn/appart-avec-spa-jacuzzi-prive.fr.html",
+    "title": "Appartement meublé avec Spa jacuzzi privatif",
+    "price": 192500,
+    "location_text": "M'bour",
+    "rating": 4.8,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/518252605.webp?k=3d983b03a0351e70b2560ef483e3ac6c844cc57467e0170b630cf5bdb3e8a608&o="
+    ],
+    "property_type": "apartment"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.352383",
+    "currency": "XOF",
+    "platform_id": "villa-aria",
+    "url": "https://www.booking.com/hotel/sn/villa-aria.fr.html",
+    "title": "Villa Aria",
+    "price": 175000,
+    "location_text": "M'bour",
+    "rating": 4.3,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/669240781.webp?k=3ab7d2c2b172e05c859b57287d35060d338e0c2fa44aea024f03359215d96232&o="
+    ],
+    "property_type": "villa"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.353214",
+    "currency": "XOF",
+    "platform_id": "appartement-meuble-avec-spa-jacuzzi",
+    "url": "https://www.booking.com/hotel/sn/appartement-meuble-avec-spa-jacuzzi.fr.html",
+    "title": "Appartement privatif À Mbour face RN1",
+    "price": 145000,
+    "location_text": "M'bour",
+    "rating": 3.8,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/679287063.webp?k=b915d5747b3e73e30c9c9ccfd2db9f8e4defb2fbd4be7563be3a58653000ea2f&o="
+    ],
+    "property_type": "apartment"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.354040",
+    "currency": "XOF",
+    "platform_id": "teranga-bour",
+    "url": "https://www.booking.com/hotel/sn/teranga-bour.fr.html",
+    "title": "Teranga",
+    "price": 210000,
+    "location_text": "M'bour",
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/797653438.webp?k=8410a0207d6cb06b6243bc88ea739bbfef9dfb4742acaf5a622098a09c628c63&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.355099",
+    "currency": "XOF",
+    "platform_id": "keur-mamina",
+    "url": "https://www.booking.com/hotel/sn/keur-mamina.fr.html",
+    "title": "Keur Mamina",
+    "price": 157500,
+    "location_text": "Warang",
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/650753292.webp?k=39b20663c7dd7f5106284739d77afee63cf60eb30193b2543722408566d0aa73&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.356430",
+    "currency": "XOF",
+    "platform_id": "studio-meuble-a-mbour",
+    "url": "https://www.booking.com/hotel/sn/studio-meuble-a-mbour.fr.html",
+    "title": "Studio meublé à Mbour",
+    "price": 75000,
+    "location_text": "M'bour",
+    "rating": 3.3,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/624360188.webp?k=29805ea73f0f235385192229bca8e58190cef2437cf09598a334fc3f71a91aec&o="
+    ],
+    "property_type": "studio"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.357272",
+    "currency": "XOF",
+    "platform_id": "terranga-bour",
+    "url": "https://www.booking.com/hotel/sn/terranga-bour.fr.html",
+    "title": "Terranga",
+    "price": 210000,
+    "location_text": "M'bour",
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/797660098.webp?k=4165079e82ddae52294ca0a026a3f6ed404312f883b1f5fab7ee7e2abf94d19a&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.358386",
+    "currency": "XOF",
+    "platform_id": "residence-le-marlodji",
+    "url": "https://www.booking.com/hotel/sn/residence-le-marlodji.fr.html",
+    "title": "Résidence Le Marlodj",
+    "price": 218750,
+    "location_text": "Mar Lodj",
+    "rating": 4.6,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/770246208.webp?k=7da4b2eecf4fa893eb79298d2024df018e12fcc950d0b8fbd3618e97cfa441d0&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.359651",
+    "currency": "XOF",
+    "platform_id": "le-noflaye-senegal",
+    "url": "https://www.booking.com/hotel/sn/le-noflaye-senegal.fr.html",
+    "title": "Le Noflaye",
+    "price": 115000,
+    "location_text": "Sali Nianiaral",
+    "rating": 4.4,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/761721203.webp?k=b31d74885c6bfe1389c626641312ac882c3525a1f664783b9612dfb08385a768&o="
+    ],
+    "property_type": "other"
+  },
+  {
+    "platform": "booking",
+    "scraped_at": "2026-01-09T02:51:38.360511",
+    "currency": "XOF",
+    "platform_id": "chambre-lumineuse-proche-plage",
+    "url": "https://www.booking.com/hotel/sn/chambre-lumineuse-proche-plage.fr.html",
+    "title": "Tekrour- La case des hotes -Chambre lumineuse proche plage",
+    "price": 157500,
+    "location_text": "M'bour",
+    "rating": 505.0,
+    "photos": [
+      "https://cf.bstatic.com/xdata/images/hotel/square240/787927840.webp?k=69947f54bf883dbba071e6b1e92b9ef1819d3a00a025dc275631a99d1ea6abc1&o="
+    ],
+    "property_type": "room"
+  }
+]

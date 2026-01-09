@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --teranga-green: #00853F;
+    --teranga-yellow: #FDEF42;
+    --teranga-red: #E31B23;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply antialiased text-gray-900 bg-white;
+  }
+}
+
+@layer components {
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .gradient-teranga {
+    background: linear-gradient(135deg, #00853F 0%, #006830 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

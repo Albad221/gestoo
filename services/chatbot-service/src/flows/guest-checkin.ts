@@ -1,0 +1,640 @@
+import type { WhatsAppMessage, ChatbotSession } from '@gestoo/types';
+import { updateSession } from '../lib/session.js';
+import { sendMessage, sendInteractiveButtons, downloadMedia } from '../lib/wati.js';
+import { supabase } from '../lib/supabase.js';
+import { extractDocumentData, isValidDocument } from '../lib/moondream.js';
+
+interface GuestData {
+  firstName?: string;
+  lastName?: string;
+  nationality?: string;
+  documentType?: 'passport' | 'national_id' | 'residence_permit' | 'other';
+  documentNumber?: string;
+  dateOfBirth?: string;
+  isMinor?: boolean;
+  age?: number;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianRelationship?: string;
+  propertyId?: string;
+  nights?: number;
+  numGuests?: number;
+}
+
+export async function handleGuestCheckin(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession
+): Promise<void> {
+  const guestData: GuestData = session.data?.guest || {};
+
+  switch (session.state) {
+    case 'GUEST_CHECKIN_START':
+      await handleStart(phone, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_PROPERTY':
+      await handlePropertySelection(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_DOCUMENT':
+      await handleDocumentUpload(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_CONFIRM_DATA':
+      await handleDataConfirmation(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_MANUAL_NAME':
+      await handleManualName(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_MANUAL_DOC_TYPE':
+      await handleManualDocType(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_MANUAL_DOC_NUM':
+      await handleManualDocNumber(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_MANUAL_NATIONALITY':
+      await handleManualNationality(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_MANUAL_DOB':
+      await handleManualDOB(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_GUARDIAN':
+      await handleGuardianInfo(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_GUARDIAN_PHONE':
+      await handleGuardianPhone(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_NIGHTS':
+      await handleNights(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_NUM_GUESTS':
+      await handleNumGuests(phone, message, session, guestData);
+      break;
+
+    case 'GUEST_CHECKIN_CONFIRM':
+      await handleFinalConfirmation(phone, message, session, guestData);
+      break;
+
+    default:
+      await sendMessage(phone, "Une erreur s'est produite. Tapez 'menu' pour recommencer.");
+      await updateSession(phone, { state: 'IDLE' });
+  }
+}
+
+async function handleStart(
+  phone: string,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  // Get landlord's properties
+  const { data: properties } = await supabase
+    .from('properties')
+    .select('id, name, city')
+    .eq('landlord_id', session.landlord_id)
+    .eq('status', 'active');
+
+  if (!properties || properties.length === 0) {
+    await sendMessage(
+      phone,
+      "Vous n'avez pas encore de propriete active.\n\nVeuillez d'abord enregistrer une propriete."
+    );
+    await updateSession(phone, { state: 'IDLE' });
+    return;
+  }
+
+  if (properties.length === 1) {
+    guestData.propertyId = properties[0].id;
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_DOCUMENT',
+      data: { ...session.data, guest: guestData },
+    });
+    await sendMessage(
+      phone,
+      `📍 ${properties[0].name}\n\n📸 Envoyez une photo du passeport ou CNI du client.\n\nOu tapez 'manuel' pour saisir manuellement.`
+    );
+  } else {
+    await sendMessage(
+      phone,
+      `Selectionnez la propriete:\n\n` +
+      properties.map((p, i) => `${i + 1}. ${p.name} (${p.city})`).join('\n') +
+      `\n\nRepondez avec le numero.`
+    );
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_PROPERTY',
+      data: { ...session.data, guest: guestData, properties },
+    });
+  }
+}
+
+async function handlePropertySelection(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) {
+    await sendMessage(phone, 'Entrez le numero de la propriete.');
+    return;
+  }
+
+  const selection = parseInt(message.text.body.trim());
+  const properties = session.data?.properties || [];
+
+  if (isNaN(selection) || selection < 1 || selection > properties.length) {
+    await sendMessage(phone, `Entrez un numero entre 1 et ${properties.length}.`);
+    return;
+  }
+
+  guestData.propertyId = properties[selection - 1].id;
+
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_DOCUMENT',
+    data: { ...session.data, guest: guestData },
+  });
+
+  await sendMessage(
+    phone,
+    `📍 ${properties[selection - 1].name}\n\n📸 Envoyez une photo du passeport ou CNI.\n\nOu tapez 'manuel' pour saisir manuellement.`
+  );
+}
+
+async function handleDocumentUpload(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  // Manual entry option
+  if (message.type === 'text' && message.text?.body.toLowerCase() === 'manuel') {
+    await sendMessage(phone, "📝 Saisie manuelle\n\nNom complet du client? (Prenom NOM)");
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_MANUAL_NAME',
+      data: { ...session.data, guest: guestData },
+    });
+    return;
+  }
+
+  if (message.type !== 'image' && message.type !== 'document') {
+    await sendMessage(
+      phone,
+      "📸 Envoyez une photo du document.\n\nOu tapez 'manuel' pour saisir manuellement."
+    );
+    return;
+  }
+
+  await sendMessage(phone, "⏳ Analyse du document...");
+
+  try {
+    const mediaId = message.image?.id || message.document?.id;
+    if (!mediaId) throw new Error('No media ID');
+
+    const imageBuffer = await downloadMedia(mediaId);
+
+    // Validate document
+    const validation = await isValidDocument(imageBuffer);
+    if (!validation.isValid && validation.confidence > 0.7) {
+      await sendMessage(
+        phone,
+        "⚠️ Image non reconnue comme document d'identite.\n\nRenvoyez une photo claire ou tapez 'manuel'."
+      );
+      return;
+    }
+
+    // Extract data with Moondream OCR
+    const ocrResult = await extractDocumentData(imageBuffer);
+
+    if (!ocrResult.success || !ocrResult.extractedData) {
+      await sendMessage(
+        phone,
+        "❌ Document illisible.\n\n1. Renvoyez une photo plus nette\n2. Tapez 'manuel' pour saisir"
+      );
+      return;
+    }
+
+    // Update guest data
+    const extracted = ocrResult.extractedData;
+    guestData.firstName = extracted.firstName || extracted.fullName?.split(' ')[0];
+    guestData.lastName = extracted.lastName || extracted.fullName?.split(' ').slice(1).join(' ');
+    guestData.documentType = ocrResult.documentType;
+    guestData.documentNumber = extracted.documentNumber;
+    guestData.nationality = extracted.nationality || extracted.issuingCountry;
+    guestData.dateOfBirth = extracted.dateOfBirth;
+
+    // Calculate age
+    if (extracted.dateOfBirth) {
+      const dob = new Date(extracted.dateOfBirth);
+      const today = new Date();
+      guestData.age = Math.floor((today.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      guestData.isMinor = guestData.age < 18;
+    }
+
+    const docTypes: Record<string, string> = {
+      passport: 'Passeport',
+      national_id: 'CNI',
+      residence_permit: 'Titre de sejour',
+      other: 'Document',
+    };
+
+    let msg = `✅ Document lu!\n\n`;
+    msg += `📄 ${docTypes[guestData.documentType || 'other']}\n`;
+    msg += `👤 ${guestData.firstName || '?'} ${guestData.lastName || '?'}\n`;
+    msg += `🔢 ${guestData.documentNumber || '?'}\n`;
+    msg += `🌍 ${guestData.nationality || '?'}\n`;
+    msg += `📅 ${guestData.dateOfBirth || '?'}`;
+
+    if (guestData.isMinor) {
+      msg += `\n\n⚠️ MINEUR (${guestData.age} ans)`;
+    }
+
+    msg += `\n\nCorrect?`;
+
+    await sendInteractiveButtons(phone, msg, [
+      { id: 'confirm_data', title: '✅ Oui' },
+      { id: 'edit_data', title: '✏️ Modifier' },
+    ]);
+
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_CONFIRM_DATA',
+      data: { ...session.data, guest: guestData },
+    });
+  } catch (error) {
+    console.error('OCR error:', error);
+    await sendMessage(phone, "❌ Erreur d'analyse. Tapez 'manuel' pour saisir manuellement.");
+  }
+}
+
+async function handleDataConfirmation(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  const reply = message.interactive?.button_reply?.id || message.interactive?.list_reply?.id;
+
+  if (reply === 'confirm_data') {
+    if (guestData.isMinor) {
+      await sendMessage(phone, "⚠️ Client mineur\n\nNom de l'accompagnateur adulte:");
+      await updateSession(phone, {
+        state: 'GUEST_CHECKIN_GUARDIAN',
+        data: { ...session.data, guest: guestData },
+      });
+    } else {
+      await sendMessage(phone, "🌙 Nombre de nuits?");
+      await updateSession(phone, {
+        state: 'GUEST_CHECKIN_NIGHTS',
+        data: { ...session.data, guest: guestData },
+      });
+    }
+  } else if (reply === 'edit_data') {
+    await sendMessage(phone, "📝 Nom complet du client? (Prenom NOM)");
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_MANUAL_NAME',
+      data: { ...session.data, guest: guestData },
+    });
+  } else {
+    await sendInteractiveButtons(phone, 'Les informations sont correctes?', [
+      { id: 'confirm_data', title: '✅ Oui' },
+      { id: 'edit_data', title: '✏️ Modifier' },
+    ]);
+  }
+}
+
+async function handleManualName(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) {
+    await sendMessage(phone, "Entrez le nom complet (Prenom NOM).");
+    return;
+  }
+
+  const fullName = message.text.body.trim();
+  const parts = fullName.split(' ');
+  guestData.firstName = parts[0];
+  guestData.lastName = parts.slice(1).join(' ') || parts[0];
+
+  await sendMessage(phone, "📄 Type de document?\n\n1. Passeport\n2. CNI\n3. Titre de sejour\n4. Autre");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_MANUAL_DOC_TYPE',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleManualDocType(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text') return;
+
+  const docTypes: Record<string, GuestData['documentType']> = {
+    '1': 'passport', '2': 'national_id', '3': 'residence_permit', '4': 'other',
+  };
+
+  const selection = message.text?.body.trim() || '';
+  if (!docTypes[selection]) {
+    await sendMessage(phone, "Entrez 1, 2, 3 ou 4.");
+    return;
+  }
+
+  guestData.documentType = docTypes[selection];
+  await sendMessage(phone, "🔢 Numero du document?");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_MANUAL_DOC_NUM',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleManualDocNumber(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  guestData.documentNumber = message.text.body.trim().toUpperCase();
+  await sendMessage(phone, "🌍 Nationalite?");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_MANUAL_NATIONALITY',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleManualNationality(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  guestData.nationality = message.text.body.trim();
+  await sendMessage(phone, "📅 Date de naissance? (JJ/MM/AAAA)");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_MANUAL_DOB',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleManualDOB(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  const dobText = message.text.body.trim();
+  let dob: Date;
+
+  if (dobText.includes('/')) {
+    const [day, month, year] = dobText.split('/');
+    dob = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  } else {
+    dob = new Date(dobText);
+  }
+
+  if (isNaN(dob.getTime())) {
+    await sendMessage(phone, "Date invalide. Format: JJ/MM/AAAA");
+    return;
+  }
+
+  guestData.dateOfBirth = dob.toISOString().split('T')[0];
+  const today = new Date();
+  guestData.age = Math.floor((today.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  guestData.isMinor = guestData.age < 18;
+
+  if (guestData.isMinor) {
+    await sendMessage(phone, `⚠️ Mineur (${guestData.age} ans)\n\nNom de l'accompagnateur:`);
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_GUARDIAN',
+      data: { ...session.data, guest: guestData },
+    });
+  } else {
+    await sendMessage(phone, "🌙 Nombre de nuits?");
+    await updateSession(phone, {
+      state: 'GUEST_CHECKIN_NIGHTS',
+      data: { ...session.data, guest: guestData },
+    });
+  }
+}
+
+async function handleGuardianInfo(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  guestData.guardianName = message.text.body.trim();
+  await sendMessage(phone, "📱 Telephone de l'accompagnateur? (77XXXXXXX)");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_GUARDIAN_PHONE',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleGuardianPhone(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  guestData.guardianPhone = message.text.body.trim().replace(/\s/g, '');
+  guestData.guardianRelationship = 'accompagnateur';
+
+  await sendMessage(phone, "🌙 Nombre de nuits?");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_NIGHTS',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleNights(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  const nights = parseInt(message.text.body.trim());
+  if (isNaN(nights) || nights < 1 || nights > 365) {
+    await sendMessage(phone, "Entrez un nombre valide (1-365).");
+    return;
+  }
+
+  guestData.nights = nights;
+  await sendMessage(phone, "👥 Nombre de personnes?");
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_NUM_GUESTS',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleNumGuests(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  if (message.type !== 'text' || !message.text?.body) return;
+
+  const numGuests = parseInt(message.text.body.trim());
+  if (isNaN(numGuests) || numGuests < 1 || numGuests > 20) {
+    await sendMessage(phone, "Entrez un nombre valide (1-20).");
+    return;
+  }
+
+  guestData.numGuests = numGuests;
+
+  const tpt = 1000 * guestData.nights! * numGuests;
+
+  let summary = `📋 RESUME\n\n`;
+  summary += `👤 ${guestData.firstName} ${guestData.lastName}\n`;
+  summary += `📄 ${guestData.documentNumber}\n`;
+  summary += `🌍 ${guestData.nationality}\n`;
+  summary += `🌙 ${guestData.nights} nuit(s)\n`;
+  summary += `👥 ${numGuests} personne(s)\n`;
+
+  if (guestData.isMinor) {
+    summary += `\n⚠️ MINEUR\n`;
+    summary += `👨‍👩‍👦 ${guestData.guardianName}\n`;
+  }
+
+  summary += `\n💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA`;
+
+  await sendInteractiveButtons(phone, summary, [
+    { id: 'confirm_checkin', title: '✅ Confirmer' },
+    { id: 'cancel_checkin', title: '❌ Annuler' },
+  ]);
+
+  await updateSession(phone, {
+    state: 'GUEST_CHECKIN_CONFIRM',
+    data: { ...session.data, guest: guestData },
+  });
+}
+
+async function handleFinalConfirmation(
+  phone: string,
+  message: WhatsAppMessage,
+  session: ChatbotSession,
+  guestData: GuestData
+): Promise<void> {
+  const reply = message.interactive?.button_reply?.id;
+
+  if (reply === 'cancel_checkin') {
+    await sendMessage(phone, "❌ Annule.\n\nTapez 'menu' pour continuer.");
+    await updateSession(phone, { state: 'IDLE', data: {} });
+    return;
+  }
+
+  if (reply !== 'confirm_checkin') {
+    await sendInteractiveButtons(phone, 'Confirmer?', [
+      { id: 'confirm_checkin', title: '✅ Confirmer' },
+      { id: 'cancel_checkin', title: '❌ Annuler' },
+    ]);
+    return;
+  }
+
+  await sendMessage(phone, "⏳ Enregistrement...");
+
+  try {
+    // Create guest
+    const { data: guest, error: guestError } = await supabase
+      .from('guests')
+      .insert({
+        first_name: guestData.firstName,
+        last_name: guestData.lastName,
+        nationality: guestData.nationality,
+        document_type: guestData.documentType,
+        document_number: guestData.documentNumber,
+        date_of_birth: guestData.dateOfBirth,
+      })
+      .select()
+      .single();
+
+    if (guestError) throw guestError;
+
+    // Create stay
+    const { data: stay, error: stayError } = await supabase
+      .from('stays')
+      .insert({
+        property_id: guestData.propertyId,
+        guest_id: guest.id,
+        check_in: new Date().toISOString(),
+        nights: guestData.nights,
+        num_guests: guestData.numGuests,
+        status: 'active',
+        is_accompanied: guestData.isMinor,
+        guardian_name: guestData.guardianName,
+        guardian_phone: guestData.guardianPhone,
+        guardian_relationship: guestData.guardianRelationship,
+      })
+      .select()
+      .single();
+
+    if (stayError) throw stayError;
+
+    // Create tax liability
+    const tpt = 1000 * guestData.nights! * guestData.numGuests!;
+
+    const { data: property } = await supabase
+      .from('properties')
+      .select('landlord_id')
+      .eq('id', guestData.propertyId)
+      .single();
+
+    await supabase.from('tax_liabilities').insert({
+      property_id: guestData.propertyId,
+      landlord_id: property?.landlord_id,
+      stay_id: stay.id,
+      guest_nights: guestData.nights! * guestData.numGuests!,
+      rate_per_night: 1000,
+      amount: tpt,
+      status: 'pending',
+      due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    });
+
+    // Minor alert
+    if (guestData.isMinor) {
+      await supabase.from('alerts').insert({
+        type: 'minor_protection',
+        severity: guestData.guardianName ? 'low' : 'high',
+        property_id: guestData.propertyId,
+        stay_id: stay.id,
+        guest_id: guest.id,
+        description: `Mineur: ${guestData.firstName} ${guestData.lastName} (${guestData.age} ans). Accompagnateur: ${guestData.guardianName || 'NON DECLARE'}`,
+        status: 'open',
+      });
+    }
+
+    await sendMessage(
+      phone,
+      `✅ Enregistre!\n\n👤 ${guestData.firstName} ${guestData.lastName}\n🌙 ${guestData.nights} nuit(s)\n💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA\n\nTapez 'menu' pour continuer.`
+    );
+
+    await updateSession(phone, { state: 'IDLE', data: {} });
+  } catch (error) {
+    console.error('Check-in error:', error);
+    await sendMessage(phone, "❌ Erreur. Reessayez ou contactez le support.");
+    await updateSession(phone, { state: 'IDLE', data: {} });
+  }
+}
