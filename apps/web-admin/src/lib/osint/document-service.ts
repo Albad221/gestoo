@@ -130,10 +130,8 @@ export function validatePassportMRZ(mrz: string): MRZValidationResult {
 
   try {
     // Clean and split into lines
-    const cleanMRZ = mrz.toUpperCase().replace(/[^A-Z0-9<
-]/g, '');
-    const lines = cleanMRZ.split('
-').filter(l => l.length > 0);
+    const cleanMRZ = mrz.toUpperCase().replace(/[^A-Z0-9<\n]/g, '');
+    const lines = cleanMRZ.split('\n').filter(l => l.length > 0);
 
     if (lines.length !== 2) {
       return {
