@@ -1,5 +1,5 @@
+# Force pnpm 10 for lockfile compatibility
 [phases.setup]
-nixPkgs = ["nodejs_20", "chromium"]
 cmds = ["corepack enable", "corepack prepare pnpm@10.27.0 --activate"]
 
 [phases.install]
@@ -10,7 +10,3 @@ cmds = ["pnpm run build"]
 
 [start]
 cmd = "pnpm start"
-
-[variables]
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
