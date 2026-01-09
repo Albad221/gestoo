@@ -258,7 +258,7 @@ export async function enrichEmailProfiles(email: string): Promise<SocialProfileR
     }
 
     const data = await response.json();
-    const profiles: SocialProfileResult['data']['profiles'] = [];
+    const profiles: NonNullable<SocialProfileResult['data']>['profiles'] = [];
 
     // Extract social profiles
     if (data.twitter) {
