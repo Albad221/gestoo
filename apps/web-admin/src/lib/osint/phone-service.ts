@@ -74,7 +74,7 @@ export async function verifyPhoneNumverify(phone: string): Promise<PhoneVerifica
   }
 }
 
-function mapNumverifyLineType(type: string): PhoneVerificationResult['data']['lineType'] {
+function mapNumverifyLineType(type: string): NonNullable<PhoneVerificationResult['data']>['lineType'] {
   switch (type?.toLowerCase()) {
     case 'mobile': return 'mobile';
     case 'landline': return 'landline';
