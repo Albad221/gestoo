@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Application } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { createApiRouter } from './api';
 import { JobScheduler } from './jobs';
@@ -12,7 +12,7 @@ const config = loadConfig();
 const supabase = createClient(config.supabaseUrl, config.supabaseKey);
 
 // Initialize Express app
-const app = express();
+const app: Application = express();
 
 // Middleware
 app.use(express.json());
