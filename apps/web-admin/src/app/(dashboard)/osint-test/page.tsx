@@ -179,14 +179,14 @@ export default function OSINTTestPage() {
                     </span>
                     {getStatusBadge(check)}
                   </div>
-                  {check.error && (
+                  {check.error ? (
                     <p className="text-xs text-red-600 truncate">{check.error as string}</p>
-                  )}
-                  {check.matchCount !== undefined && (
+                  ) : null}
+                  {check.matchCount !== undefined ? (
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                       {check.matchCount as number} result(s)
                     </p>
-                  )}
+                  ) : null}
                 </div>
               ))}
             </div>
