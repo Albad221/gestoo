@@ -127,8 +127,8 @@ export default function AdminDashboardPage() {
           totalRevenue,
         });
 
-        setRecentCheckins(staysData as Stay[] || []);
-        setProperties(propertiesData as Property[] || []);
+        setRecentCheckins((staysData as unknown as Stay[]) || []);
+        setProperties((propertiesData as unknown as Property[]) || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
