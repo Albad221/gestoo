@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import type { Property } from '@teranga/types';
+import type { Property } from '@gestoo/shared-types';
 
 const propertyTypeLabels: Record<string, string> = {
   hotel: 'Hotel',

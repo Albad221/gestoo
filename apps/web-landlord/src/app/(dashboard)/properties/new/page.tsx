@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import type { PropertyType } from '@teranga/types';
+import type { PropertyType } from '@gestoo/shared-types';
 
 const propertyTypes: { value: PropertyType; label: string; description: string }[] = [
   { value: 'hotel', label: 'Hotel', description: 'Etablissement hotelier classe' },
