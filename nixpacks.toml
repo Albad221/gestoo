@@ -1,0 +1,6 @@
+# Force pnpm 10 for lockfile compatibility
+[phases.setup]
+cmds = ["corepack enable", "corepack prepare pnpm@10.27.0 --activate"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
