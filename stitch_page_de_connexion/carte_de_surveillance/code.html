@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carte de Surveillance - Police Nationale</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0d121b] h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex-none z-30 bg-white dark:bg-[#1a2233] border-b border-[#e7ebf3] dark:border-gray-800 px-6 py-3 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">local_police</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight text-[#0d121b] dark:text-white">Carte de Surveillance</h1>
+<p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Système National de Sécurité</p>
+</div>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-gray-600 dark:text-gray-300 hover:text-primary text-sm font-medium transition-colors" href="#">Tableau de bord</a>
+<a class="text-primary text-sm font-bold bg-primary/10 px-3 py-1.5 rounded-full" href="#">Carte</a>
+<a class="text-gray-600 dark:text-gray-300 hover:text-primary text-sm font-medium transition-colors" href="#">Rapports</a>
+<a class="text-gray-600 dark:text-gray-300 hover:text-primary text-sm font-medium transition-colors" href="#">Administration</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+<div class="flex items-center gap-3 pl-2">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold text-[#0d121b] dark:text-white">Officier Faye</p>
+<p class="text-xs text-gray-500">Commissariat Central</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-white shadow-sm" data-alt="Portrait of a police officer in uniform" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB_pw9j23ariyQZy48Js9bKU7OMbPHgVJr-4rZSQWOs4gK_4Kli9djF1GttGR0P-GtIapzL1rXpRSJkJnR0tz5ZmZoiwceuzqKNaoaZUJNJda4xj29y_ZB3iqj3UzUfLE7Puyxaxyc_jslYVqQ_8mzszPwbm-APXM301mxWmcgWpDnLg8p9TfB69SVWN2A-QjMnWHW6ADXXw40tywR8j-V0ea9GsM8TGRWRqQRwGdJuVfwKQEfzUSJ5_xJJ57IJ4Zmc9KdSpgF4APrK");'></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content (Map Area) -->
+<main class="flex-1 relative w-full h-full bg-[#e5e7eb] overflow-hidden group/map">
+<!-- Map Background Simulation -->
+<div class="absolute inset-0 z-0 bg-cover bg-center grayscale-[20%]" data-alt="Detailed street map of Dakar Senegal with road networks" data-location="Dakar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA1RkhM0R95PsE-cJxIkd1VA1UovHOozhWawKPM5bJYqNqnK5t8VXOBLrMu7fehgLWAuU8Xz7rMZRYCcKB4bVa5Pp9Pj-MWfkC6sOGBhUCOodDM7nDB5pZA9SnMIengIg7X3Hz9SiVQ1hsdpBMt0K4oqCRYAlkC6LTbfpUgSCVJ0stJAzbRF0B3h2_IvtA9c0BIoF3eF8YbRBGdANOon8O-2paVBqIgpCFZBIs0bDkCPvtb5BlsoYtC_3X1mTeMlrcgUjAn5VDaOOaI");'>
+<div class="absolute inset-0 bg-primary/5 mix-blend-multiply pointer-events-none"></div>
+</div>
+<!-- Map Markers Overlay -->
+<div class="absolute inset-0 z-10 pointer-events-none">
+<!-- Marker: Active Alert (Pulsing) -->
+<div class="absolute top-[40%] left-[45%] pointer-events-auto cursor-pointer group">
+<span class="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
+<div class="relative flex items-center justify-center size-12 bg-red-600 rounded-full border-4 border-white shadow-lg text-white transform transition-transform hover:scale-110">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+<div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                    Alerte Critique
+                </div>
+</div>
+<!-- Marker: Registered Property -->
+<div class="absolute top-[30%] left-[60%] pointer-events-auto cursor-pointer group">
+<div class="relative flex items-center justify-center size-10 bg-primary rounded-full border-4 border-white shadow-lg text-white transform transition-transform hover:scale-110">
+<span class="material-symbols-outlined text-[18px]">hotel</span>
+</div>
+<div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                    Radisson Blu
+                </div>
+</div>
+<!-- Marker: Registered Property (Selected) -->
+<div class="absolute top-[55%] left-[52%] pointer-events-auto cursor-pointer z-20">
+<div class="relative flex items-center justify-center size-12 bg-primary rounded-full border-4 border-white shadow-xl text-white ring-4 ring-primary/30 transform scale-110">
+<span class="material-symbols-outlined text-[20px]">apartment</span>
+</div>
+</div>
+<!-- Marker: Pending -->
+<div class="absolute top-[65%] left-[35%] pointer-events-auto cursor-pointer group">
+<div class="relative flex items-center justify-center size-8 bg-gray-500 rounded-full border-2 border-white shadow-md text-white transform transition-transform hover:scale-110">
+<span class="material-symbols-outlined text-[16px]">hourglass_top</span>
+</div>
+</div>
+<!-- Cluster -->
+<div class="absolute top-[25%] left-[25%] pointer-events-auto cursor-pointer group">
+<div class="relative flex items-center justify-center size-10 bg-white rounded-full border-2 border-primary shadow-lg text-primary font-bold text-sm transform transition-transform hover:scale-110">
+                    24
+                </div>
+</div>
+</div>
+<!-- UI Overlay Layer -->
+<!-- Top Controls (Search & Filters) -->
+<div class="absolute top-0 left-0 right-0 z-20 p-4 pointer-events-none flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-gradient-to-b from-black/20 to-transparent pb-12">
+<!-- Search Bar -->
+<div class="pointer-events-auto w-full md:w-auto md:min-w-[320px] shadow-lg rounded-xl overflow-hidden bg-white dark:bg-[#1a2233] flex items-center h-12">
+<div class="pl-4 text-gray-400">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full h-full border-none focus:ring-0 text-sm bg-transparent dark:text-white px-3" placeholder="Rechercher une propriété, adresse, ID..." type="text"/>
+</div>
+<!-- Filter Chips (Horizontal Scrollable) -->
+<div class="pointer-events-auto flex items-center gap-2 overflow-x-auto max-w-full scrollbar-hide pb-1 md:pb-0">
+<button class="flex items-center gap-2 bg-white dark:bg-[#1a2233] dark:text-white px-4 py-2 rounded-full shadow-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-all border border-transparent hover:border-gray-200">
+<span>Région: Dakar</span>
+<span class="material-symbols-outlined text-[18px] text-gray-400">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 bg-white dark:bg-[#1a2233] dark:text-white px-4 py-2 rounded-full shadow-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-all border border-transparent hover:border-gray-200">
+<span>Statut: Tous</span>
+<span class="material-symbols-outlined text-[18px] text-gray-400">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-full shadow-md text-sm font-medium hover:bg-blue-600 whitespace-nowrap transition-all ring-2 ring-primary/20">
+<span class="material-symbols-outlined text-[18px]">layers</span>
+<span>Alertes: Actives</span>
+</button>
+<button class="flex items-center gap-2 bg-white dark:bg-[#1a2233] dark:text-white px-4 py-2 rounded-full shadow-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-all border border-transparent hover:border-gray-200">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>Période: 24h</span>
+</button>
+</div>
+</div>
+<!-- Sidebar / Details Panel (Right) -->
+<aside class="absolute top-20 right-4 bottom-auto md:bottom-24 w-full md:w-[380px] z-20 pointer-events-auto">
+<div class="bg-white dark:bg-[#1a2233] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-160px)] md:max-h-none">
+<!-- Panel Header -->
+<div class="relative h-40 bg-gray-100">
+<div class="absolute top-4 right-4 z-10">
+<button class="bg-black/20 hover:bg-black/40 text-white rounded-full p-1 backdrop-blur-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="w-full h-full bg-center bg-cover" data-alt="Exterior view of Hotel Terrou-Bi showing entrance" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCUfry_FNpiDeSM7ENBfeOuD7qSwb1yPZeRp5vcITVEAq-GgcsTgyU-Jpi_ZPBUzs-JWI3NoZWGhskOAHS8FDw6jHHa51k2PD7yBvRr5cLXW19Zcgx9Cpz7OIwKx1vGPoaigjjgrKSaQAIo-KwLueryiatxYHr5fZ2XxM5MqLy4JQADxvbJ83rhutCpHfnalhxVnpWLC91lrSnQlRbHN9A_79_nlITaTwT9iLWx9o2Br3xrBPNWT77cDq82nr1mg5nMkgXX4zphEPGb");'></div>
+<div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Enregistré</span>
+<span class="bg-green-500/80 backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="size-1.5 bg-white rounded-full animate-pulse"></span> En ligne
+                            </span>
+</div>
+<h2 class="text-xl font-bold leading-tight">Hôtel Terrou-Bi</h2>
+</div>
+</div>
+<!-- Panel Content -->
+<div class="p-5 flex flex-col gap-5 overflow-y-auto">
+<!-- Quick Actions -->
+<div class="flex gap-2">
+<button class="flex-1 bg-primary hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                            Voir le dossier
+                        </button>
+<button class="size-9 shrink-0 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+<span class="material-symbols-outlined text-[20px]">phone</span>
+</button>
+<button class="size-9 shrink-0 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+<span class="material-symbols-outlined text-[20px]">share_location</span>
+</button>
+</div>
+<!-- Information Grid -->
+<div class="grid grid-cols-2 gap-4 text-sm">
+<div class="col-span-2">
+<p class="text-gray-500 dark:text-gray-400 text-xs mb-1">Adresse</p>
+<p class="font-medium dark:text-white flex items-start gap-1">
+<span class="material-symbols-outlined text-gray-400 text-[16px] mt-0.5">location_on</span>
+                                Blvd Martin Luther King, Dakar
+                            </p>
+</div>
+<div>
+<p class="text-gray-500 dark:text-gray-400 text-xs mb-1">Propriétaire/Gérant</p>
+<p class="font-medium dark:text-white">Moussa Diop</p>
+</div>
+<div>
+<p class="text-gray-500 dark:text-gray-400 text-xs mb-1">ID Système</p>
+<p class="font-mono text-gray-600 dark:text-gray-300">SN-DKR-8842</p>
+</div>
+</div>
+<div class="h-px bg-gray-100 dark:bg-gray-700 w-full"></div>
+<!-- Recent Activity -->
+<div>
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-sm font-bold dark:text-white">Activité Récente</h3>
+<button class="text-xs text-primary font-medium">Tout voir</button>
+</div>
+<div class="space-y-3">
+<div class="flex gap-3 items-start">
+<div class="bg-blue-50 dark:bg-blue-900/30 text-primary p-1.5 rounded-full mt-0.5">
+<span class="material-symbols-outlined text-[16px]">person_check</span>
+</div>
+<div>
+<p class="text-sm font-medium dark:text-white">Check-in: Amadou Ba</p>
+<p class="text-xs text-gray-500">Il y a 10 minutes • Chambre 204</p>
+</div>
+</div>
+<div class="flex gap-3 items-start opacity-70">
+<div class="bg-gray-50 dark:bg-gray-800 text-gray-500 p-1.5 rounded-full mt-0.5">
+<span class="material-symbols-outlined text-[16px]">logout</span>
+</div>
+<div>
+<p class="text-sm font-medium dark:text-white">Check-out: Sophie Ndiaye</p>
+<p class="text-xs text-gray-500">Il y a 45 minutes • Chambre 112</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Stats Bar (Floating Bottom Center) -->
+<div class="absolute bottom-6 left-6 md:left-1/2 md:-translate-x-1/2 z-20 pointer-events-auto flex flex-col md:flex-row gap-3 w-max max-w-[calc(100%-3rem)] overflow-x-auto p-1">
+<div class="bg-white dark:bg-[#1a2233] rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 p-3 min-w-[160px] flex flex-col justify-center">
+<p class="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Check-ins (24h)</p>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold text-[#0d121b] dark:text-white tabular-nums">1 245</span>
+<span class="text-green-500 text-xs font-bold mb-1.5 flex items-center">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12%
+                    </span>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1a2233] rounded-lg shadow-lg border-l-4 border-l-red-500 p-3 min-w-[160px] flex flex-col justify-center">
+<p class="text-red-500 text-xs font-bold uppercase tracking-wide mb-1 flex items-center gap-1">
+<span class="size-2 rounded-full bg-red-500 animate-pulse"></span> Alertes Actives
+                </p>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold text-[#0d121b] dark:text-white tabular-nums">12</span>
+<span class="text-xs text-gray-400 mb-1.5">Critiques: 3</span>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1a2233] rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 p-3 min-w-[160px] flex flex-col justify-center">
+<p class="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">Propriétés Visibles</p>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold text-[#0d121b] dark:text-white tabular-nums">450</span>
+<span class="text-xs text-gray-400 mb-1.5">sur 1,200</span>
+</div>
+</div>
+</div>
+<!-- Map Controls (Zoom) - Bottom Right -->
+<div class="absolute bottom-8 right-6 flex flex-col gap-2 z-20 pointer-events-auto">
+<button class="size-10 bg-white dark:bg-[#1a2233] rounded-lg shadow-md flex items-center justify-center text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" title="Ma position">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<div class="flex flex-col rounded-lg shadow-md bg-white dark:bg-[#1a2233] overflow-hidden">
+<button class="size-10 flex items-center justify-center text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="size-10 flex items-center justify-center text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+<button class="size-10 bg-white dark:bg-[#1a2233] rounded-lg shadow-md flex items-center justify-center text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mt-2" title="Couches">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+</main>
+</body></html>

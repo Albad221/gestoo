@@ -1,0 +1,137 @@
+version: '3.8'
+
+# Gestoo Platform - Development Overrides
+# Use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # ===========================================
+  # Redis - Development Configuration
+  # ===========================================
+  redis:
+    ports:
+      - "6379:6379"
+    # Enable Redis Commander for debugging
+    command: redis-server --appendonly yes --loglevel verbose
+
+  # ===========================================
+  # Chatbot Service - Development Mode
+  # ===========================================
+  chatbot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.chatbot
+      target: development
+      args:
+        - NODE_ENV=development
+    environment:
+      - NODE_ENV=development
+      - DEBUG=gestoo:*
+      - LOG_LEVEL=debug
+    volumes:
+      # Hot reload - mount source code
+      - ../services/chatbot-service/src:/app/services/chatbot-service/src:delegated
+      - ../packages:/app/packages:delegated
+      # Prevent overwriting node_modules
+      - /app/services/chatbot-service/node_modules
+      - /app/node_modules
+    command: pnpm --filter @gestoo/chatbot-service dev
+    # Debug port for Node.js inspector
+    ports:
+      - "4000:4000"
+      - "9229:9229"  # Node.js debugger
+    stdin_open: true
+    tty: true
+
+  # ===========================================
+  # Scraper Service - Development Mode
+  # ===========================================
+  scraper:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.scraper
+      target: development
+      args:
+        - NODE_ENV=development
+    environment:
+      - NODE_ENV=development
+      - DEBUG=gestoo:*
+      - LOG_LEVEL=debug
+      - PUPPETEER_HEADLESS=true
+      - SCRAPER_SCHEDULE=*/5 * * * *  # Run every 5 minutes in dev
+    volumes:
+      # Hot reload - mount source code
+      - ../services/scraper-service/src:/app/services/scraper-service/src:delegated
+      - ../packages:/app/packages:delegated
+      # Prevent overwriting node_modules
+      - /app/services/scraper-service/node_modules
+      - /app/node_modules
+    command: pnpm --filter @gestoo-safe/scraper-service dev
+    ports:
+      - "4001:4001"
+      - "9230:9229"  # Node.js debugger (different host port)
+    stdin_open: true
+    tty: true
+
+  # ===========================================
+  # Intelligence Service - Development Mode
+  # ===========================================
+  intelligence:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.intelligence
+      target: development
+      args:
+        - NODE_ENV=development
+    environment:
+      - NODE_ENV=development
+      - DEBUG=gestoo:*
+      - LOG_LEVEL=debug
+    volumes:
+      # Hot reload - mount source code
+      - ../services/intelligence-service/src:/app/services/intelligence-service/src:delegated
+      - ../packages:/app/packages:delegated
+      # Prevent overwriting node_modules
+      - /app/services/intelligence-service/node_modules
+      - /app/node_modules
+    command: pnpm --filter intelligence-service dev
+    ports:
+      - "5000:5000"
+      - "9231:9229"  # Node.js debugger (different host port)
+    stdin_open: true
+    tty: true
+
+  # ===========================================
+  # Redis Commander - Redis GUI (Dev Only)
+  # ===========================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gestoo-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - gestoo-network
+    profiles:
+      - debug
+
+  # ===========================================
+  # MailHog - Email Testing (Dev Only)
+  # ===========================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: gestoo-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - gestoo-network
+    profiles:
+      - debug
+
+# Override network settings for development
+networks:
+  gestoo-network:
+    name: gestoo-network-dev

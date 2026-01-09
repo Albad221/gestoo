@@ -1,0 +1,379 @@
+<html><head><meta charset="utf-8"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+:root {
+  --primary-color: #3b82f6; 
+}
+</style>
+</head><body><div class="relative flex h-full min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e7ebf3] dark:border-b-[#2a3441] bg-white dark:bg-[#1a202c] px-6 py-3 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="size-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[28px]">shield</span>
+</div>
+<div>
+<h2 class="text-[#0d121b] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Système National de Sécurité</h2>
+<p class="text-[#4c669a] dark:text-[#94a3b8] text-xs font-medium">Portail Administratif</p>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-primary text-sm font-semibold leading-normal border-b-2 border-primary pb-0.5" href="#">Tableau de bord</a>
+<a class="text-[#4c669a] dark:text-[#94a3b8] hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Hébergements</a>
+<a class="text-[#4c669a] dark:text-[#94a3b8] hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Voyageurs</a>
+<a class="text-[#4c669a] dark:text-[#94a3b8] hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Alertes</a>
+<a class="text-[#4c669a] dark:text-[#94a3b8] hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Rapports</a>
+</nav>
+<div class="flex items-center gap-3 border-l border-[#e7ebf3] dark:border-[#2a3441] pl-6">
+<button class="flex items-center justify-center size-9 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-[#4c669a] dark:text-[#94a3b8]">notifications</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-[#e7ebf3]" data-alt="Portrait of a government official" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAQnSSSzSOEV6Nu6rBFSLhDS6D8xihamXpcJStL6wY7Kwlc3s7pbvbTGiFLmUslnri5JBD7T4S16t61l49huEXWdB26kEBLza1JQ_vMdqY7VdsPCQTFNbMo5eVpf8ws2lxYPYzht9mMbvzzK4B6uI9PzYXUakk2PlvozHgq8gCdpu8JnF152z4wa8KZE7iAQoIVYC8AxN5-FQWhUyPi38pF8pBcftVAaLipH1hxd7RfEDrhSLuUKFmzScLa7k5ejYvdVi2X7uMaXuJN");'></div>
+</div>
+</div>
+</header>
+<main class="flex flex-1 flex-col px-4 md:px-10 py-8 mx-auto w-full max-w-[1440px]">
+<div class="mb-8 w-full">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-5 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="flex items-center justify-center size-10 rounded-full bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-100 shrink-0">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div class="flex flex-col">
+<p class="text-[#0d121b] dark:text-white text-base font-bold leading-tight">Attention Requise</p>
+<p class="text-[#4c669a] dark:text-red-200 text-sm font-normal leading-normal mt-1">3 alertes de sécurité critiques signalées dans les dernières 24 heures.</p>
+</div>
+</div>
+<button class="flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold leading-normal transition-colors shadow-sm">
+<span class="truncate">Examiner les alertes</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-6">
+<div>
+<h1 class="text-[#0d121b] dark:text-white text-2xl font-bold leading-tight tracking-[-0.015em]">Vue d'ensemble</h1>
+<p class="text-[#4c669a] dark:text-[#94a3b8] text-sm mt-1">Mardi, 24 Octobre 2023</p>
+</div>
+<div class="flex gap-2 mt-4 md:mt-0">
+<button class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#4c669a] dark:text-[#94a3b8] bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] rounded-lg hover:bg-gray-50 dark:hover:bg-[#252f3e] transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span> Exporter
+                    </button>
+<button class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#4c669a] dark:text-[#94a3b8] bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] rounded-lg hover:bg-gray-50 dark:hover:bg-[#252f3e] transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span> Filtrer
+                    </button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[#4c669a] dark:text-[#94a3b8] text-sm font-semibold uppercase tracking-wider">Propriétés actives</p>
+<span class="material-symbols-outlined text-primary text-[24px]">domain</span>
+</div>
+<div class="flex items-end gap-2">
+<p class="text-[#0d121b] dark:text-white text-3xl font-bold leading-tight">12 450</p>
+<span class="flex items-center text-[#07883b] text-xs font-bold bg-[#07883b]/10 px-1.5 py-0.5 rounded mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">arrow_upward</span> 2.5%
+                        </span>
+</div>
+<p class="text-[#4c669a] dark:text-[#64748b] text-xs">vs mois dernier</p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[#4c669a] dark:text-[#94a3b8] text-sm font-semibold uppercase tracking-wider">Séjours actifs</p>
+<span class="material-symbols-outlined text-primary text-[24px]">group</span>
+</div>
+<div class="flex items-end gap-2">
+<p class="text-[#0d121b] dark:text-white text-3xl font-bold leading-tight">3 208</p>
+<span class="flex items-center text-[#07883b] text-xs font-bold bg-[#07883b]/10 px-1.5 py-0.5 rounded mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">arrow_upward</span> 12%
+                        </span>
+</div>
+<p class="text-[#4c669a] dark:text-[#64748b] text-xs">vs mois dernier</p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[#4c669a] dark:text-[#94a3b8] text-sm font-semibold uppercase tracking-wider">Alertes ouvertes</p>
+<span class="material-symbols-outlined text-[#e73908] text-[24px]">notifications_active</span>
+</div>
+<div class="flex items-end gap-2">
+<p class="text-[#0d121b] dark:text-white text-3xl font-bold leading-tight">14</p>
+<span class="flex items-center text-[#e73908] text-xs font-bold bg-[#e73908]/10 px-1.5 py-0.5 rounded mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">priority_high</span> 3 Critiques
+                        </span>
+</div>
+<p class="text-[#4c669a] dark:text-[#64748b] text-xs">Nécessite attention</p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between mb-2">
+<p class="text-[#4c669a] dark:text-[#94a3b8] text-sm font-semibold uppercase tracking-wider">Recettes TPT</p>
+<span class="material-symbols-outlined text-primary text-[24px]">payments</span>
+</div>
+<div class="flex items-end gap-2">
+<p class="text-[#0d121b] dark:text-white text-3xl font-bold leading-tight">45M CFA</p>
+<span class="flex items-center text-[#07883b] text-xs font-bold bg-[#07883b]/10 px-1.5 py-0.5 rounded mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">arrow_upward</span> 8%
+                        </span>
+</div>
+<p class="text-[#4c669a] dark:text-[#64748b] text-xs">vs mois dernier</p>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<div class="lg:col-span-2 flex flex-col rounded-xl border border-[#cfd7e7] dark:border-[#2a3441] bg-white dark:bg-[#1a202c] shadow-sm overflow-hidden h-[420px]">
+<div class="flex items-center justify-between px-5 py-4 border-b border-[#cfd7e7] dark:border-[#2a3441] bg-white dark:bg-[#1a202c]">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+<span class="material-symbols-outlined">travel_explore</span>
+</div>
+<div>
+<h3 class="text-[#0d121b] dark:text-white text-lg font-bold leading-tight">Intelligence Marché: Conformité</h3>
+<p class="text-xs text-[#4c669a] dark:text-[#94a3b8]">Carte de densité des annonces non-conformes</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<select class="bg-gray-50 dark:bg-[#1e293b] border border-[#cfd7e7] dark:border-[#2a3441] text-[#0d121b] dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2 cursor-pointer">
+<option selected="">Dakar</option>
+<option>Saint-Louis</option>
+<option>Saly</option>
+<option>Thiès</option>
+</select>
+<button class="p-2 hover:bg-gray-100 dark:hover:bg-[#252f3e] rounded-lg transition-colors text-[#4c669a] dark:text-[#94a3b8]" title="Plein écran">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+</div>
+</div>
+<div class="relative flex-1 bg-[#eef2f6] dark:bg-[#0f172a] overflow-hidden group/map relative">
+<div class="absolute inset-0 opacity-[0.4]" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%239C92AC\' fill-opacity=\'0.15\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+<div class="absolute top-[30%] left-[40%] w-32 h-32 bg-red-500/20 rounded-full blur-2xl z-0"></div>
+<div class="absolute top-[45%] left-[25%] w-40 h-40 bg-red-600/15 rounded-full blur-3xl z-0"></div>
+<div class="absolute top-[25%] left-[35%] z-10 group/marker cursor-pointer">
+<div class="relative flex items-center justify-center size-6 bg-white dark:bg-[#1e293b] rounded-full shadow-md border border-green-200 dark:border-green-900 transition-transform hover:scale-125">
+<span class="material-symbols-outlined text-[14px] text-green-600 font-bold">check</span>
+</div>
+</div>
+<div class="absolute top-[32%] left-[38%] z-10 group/marker cursor-pointer">
+<div class="relative flex items-center justify-center size-6 bg-white dark:bg-[#1e293b] rounded-full shadow-md border border-green-200 dark:border-green-900 transition-transform hover:scale-125">
+<span class="material-symbols-outlined text-[14px] text-green-600 font-bold">check</span>
+</div>
+</div>
+<div class="absolute top-[42%] left-[28%] z-10 group/marker cursor-pointer">
+<div class="relative flex items-center justify-center size-6 bg-white dark:bg-[#1e293b] rounded-full shadow-md border border-red-200 dark:border-red-900 animate-bounce [animation-duration:2s]">
+<span class="material-symbols-outlined text-[14px] text-red-600 font-bold">close</span>
+</div>
+</div>
+<div class="absolute top-[48%] left-[45%] z-20 cursor-pointer">
+<div class="relative flex items-center justify-center size-8 bg-red-600 rounded-full shadow-lg border-2 border-white dark:border-[#1a202c] ring-4 ring-red-500/20">
+<span class="material-symbols-outlined text-[16px] text-white font-bold">close</span>
+</div>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-[#cfd7e7] dark:border-[#2a3441] p-0 overflow-hidden z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+<div class="bg-red-50 dark:bg-red-900/20 px-4 py-2 border-b border-red-100 dark:border-red-900/30 flex items-center justify-between">
+<span class="text-xs font-bold text-red-700 dark:text-red-300 uppercase tracking-wider">Non-Conforme</span>
+<span class="material-symbols-outlined text-red-600 text-[16px]">warning</span>
+</div>
+<div class="p-4">
+<div class="flex items-start gap-3 mb-3">
+<div class="size-10 rounded bg-gray-100 dark:bg-gray-800 bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA9qz0TsNWrjlH2Zrlb6ssVPTmCHRsamJzVTCFU2X574uHyNh-p_K0LepXJpI73zlSO9pMnCWk6z1lkb6WOxg3qeCBTcdVvExG2gViztcQkyQIOoQAwT8K4SAy7o3m8d4M9ey0Z43gdi8gmlzOGfKaSz6FoIKTkvYMqSA2DxGCdNM2WwO_JaytC5gll8LFHPcrUpsYTROuoonpuPsmAmLP8BCXpQd3omdedB5ni7fCdr-1JO_Fw1OjueBl7y_xL-JyDPYodZ6dIzdni');"></div>
+<div>
+<h4 class="text-sm font-bold text-[#0d121b] dark:text-white line-clamp-1">Appartement Vue Mer</h4>
+<p class="text-xs text-[#4c669a] dark:text-[#94a3b8]">Plateau, Dakar</p>
+</div>
+</div>
+<div class="space-y-2 text-xs">
+<div class="flex justify-between">
+<span class="text-[#4c669a] dark:text-[#94a3b8]">Plateforme</span>
+<span class="font-medium text-[#0d121b] dark:text-white flex items-center gap-1">
+<span class="size-2 bg-[#ff5a5f] rounded-full"></span> Airbnb
+                                </span>
+</div>
+<div class="flex justify-between">
+<span class="text-[#4c669a] dark:text-[#94a3b8]">Hôte</span>
+<span class="font-medium text-[#0d121b] dark:text-white">M. Ndiaye (Non-vérifié)</span>
+</div>
+<div class="flex justify-between">
+<span class="text-[#4c669a] dark:text-[#94a3b8]">Dernier scan</span>
+<span class="font-medium text-[#0d121b] dark:text-white">Il y a 2h</span>
+</div>
+</div>
+<button class="mt-3 w-full py-1.5 rounded-lg bg-[#0d121b] hover:bg-black dark:bg-white dark:hover:bg-gray-200 text-white dark:text-[#0d121b] text-xs font-semibold transition-colors">
+                            Voir le détail
+                        </button>
+</div>
+<div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 size-3 bg-white dark:bg-[#1e293b] border-b border-r border-[#cfd7e7] dark:border-[#2a3441] rotate-45"></div>
+</div>
+</div>
+<div class="absolute top-[60%] left-[55%] z-10 group/marker cursor-pointer">
+<div class="relative flex items-center justify-center size-6 bg-white dark:bg-[#1e293b] rounded-full shadow-md border border-green-200 dark:border-green-900 transition-transform hover:scale-125">
+<span class="material-symbols-outlined text-[14px] text-green-600 font-bold">check</span>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 bg-white/95 dark:bg-[#1a202c]/95 p-3 rounded-lg border border-[#cfd7e7] dark:border-[#2a3441] shadow-sm backdrop-blur-sm z-30">
+<h4 class="text-[10px] uppercase font-bold text-[#4c669a] dark:text-[#94a3b8] mb-2 tracking-wider">Légende de Conformité</h4>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<div class="flex items-center justify-center size-4 bg-white rounded-full border border-green-200 shadow-sm">
+<span class="material-symbols-outlined text-[10px] text-green-600 font-bold">check</span>
+</div>
+<span class="text-xs text-[#0d121b] dark:text-white font-medium">Enregistré (Conforme)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center justify-center size-4 bg-white rounded-full border border-red-200 shadow-sm">
+<span class="material-symbols-outlined text-[10px] text-red-600 font-bold">close</span>
+</div>
+<span class="text-xs text-[#0d121b] dark:text-white font-medium">Non-enregistré (Illégal)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-12 h-2 rounded-full bg-gradient-to-r from-transparent via-red-500/50 to-red-600"></div>
+<span class="text-xs text-[#0d121b] dark:text-white font-medium">Densité Risque</span>
+</div>
+</div>
+</div>
+<div class="absolute bottom-4 right-4 flex flex-col gap-2">
+<button class="size-8 bg-white dark:bg-[#1a202c] rounded-md shadow hover:bg-gray-50 dark:hover:bg-[#252f3e] flex items-center justify-center text-[#4c669a] border border-[#cfd7e7] dark:border-[#2a3441]">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<button class="size-8 bg-white dark:bg-[#1a202c] rounded-md shadow hover:bg-gray-50 dark:hover:bg-[#252f3e] flex items-center justify-center text-[#4c669a] border border-[#cfd7e7] dark:border-[#2a3441]">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col h-[420px]">
+<h3 class="text-[#0d121b] dark:text-white text-lg font-bold mb-4">Actions Rapides</h3>
+<div class="grid grid-cols-2 gap-4 flex-1">
+<button class="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] hover:border-primary hover:bg-primary/5 dark:hover:bg-[#1e293b] hover:shadow-md transition-all group h-full">
+<div class="size-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">person_search</span>
+</div>
+<span class="text-xs sm:text-sm font-semibold text-[#0d121b] dark:text-white text-center">Rechercher voyageur</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] hover:border-primary hover:bg-primary/5 dark:hover:bg-[#1e293b] hover:shadow-md transition-all group h-full">
+<div class="size-10 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-[#e73908] group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">assignment_late</span>
+</div>
+<span class="text-xs sm:text-sm font-semibold text-[#0d121b] dark:text-white text-center">Voir alertes</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] hover:border-primary hover:bg-primary/5 dark:hover:bg-[#1e293b] hover:shadow-md transition-all group h-full">
+<div class="size-10 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-[#07883b] group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<span class="text-xs sm:text-sm font-semibold text-[#0d121b] dark:text-white text-center">Vérifier propriété</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-[#1a202c] border border-[#cfd7e7] dark:border-[#2a3441] hover:border-primary hover:bg-primary/5 dark:hover:bg-[#1e293b] hover:shadow-md transition-all group h-full">
+<div class="size-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<span class="text-xs sm:text-sm font-semibold text-[#0d121b] dark:text-white text-center">Statistiques</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-1 flex-col rounded-xl border border-[#cfd7e7] dark:border-[#2a3441] bg-white dark:bg-[#1a202c] shadow-sm overflow-hidden">
+<div class="flex items-center justify-between p-5 border-b border-[#cfd7e7] dark:border-[#2a3441]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">history</span>
+<h3 class="text-[#0d121b] dark:text-white text-lg font-bold">Arrivées d'aujourd'hui</h3>
+</div>
+<a class="text-primary text-sm font-medium hover:underline" href="#">Voir tout</a>
+</div>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left text-sm whitespace-nowrap">
+<thead class="bg-background-light dark:bg-[#1e293b] text-[#4c669a] dark:text-[#94a3b8] font-semibold uppercase text-xs tracking-wider">
+<tr>
+<th class="px-6 py-4">Voyageur</th>
+<th class="px-6 py-4">Propriété</th>
+<th class="px-6 py-4">Ville</th>
+<th class="px-6 py-4">Heure</th>
+<th class="px-6 py-4 text-right">Statut</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#cfd7e7] dark:divide-[#2a3441]">
+<tr class="hover:bg-gray-50 dark:hover:bg-[#252f3e] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-9 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100 text-xs font-bold">
+                                            JD
+                                        </div>
+<div>
+<p class="font-medium text-[#0d121b] dark:text-white">Jean Dupont</p>
+<p class="text-xs text-[#4c669a] dark:text-[#64748b]">FR-892019</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#0d121b] dark:text-white font-medium">Villa Les Almadies</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">Dakar</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">14:30</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-2.5 py-1 text-xs font-semibold text-[#07883b] dark:text-green-400">
+<span class="size-1.5 rounded-full bg-[#07883b] dark:bg-green-400"></span>
+                                        Enregistré
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-[#252f3e] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 border border-[#cfd7e7]" data-alt="Portrait of Aïssatou Mbaye" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAfVi3Cw4l66nVvTGvu53yUyvIreaBPP5cbzWnET4bmM_beZwT6J3ieC4BlfwXmSglnSKSGI-2WV2OkMTEcCK-PfuaZP-XYyKo6qrvhxCO3czPDBZXU1F3M_6ehZoDZ7ibjeebzshYcmUFd76kgCjekOH7j7h7UuVsOF7kt5avHkNesQwriSD6eZXgE3SQ8hZrUFj6OX6rdPSK8eyCrEdfuvL0QwqB5XXgqelkFqz41-lCDL9-eeRdK6PCBicyr-Oo6Jfx5XiXHIxmh");'></div>
+<div>
+<p class="font-medium text-[#0d121b] dark:text-white">Aïssatou Mbaye</p>
+<p class="text-xs text-[#4c669a] dark:text-[#64748b]">SN-221098</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#0d121b] dark:text-white font-medium">Hotel Terrou-Bi</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">Dakar</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">14:15</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-2.5 py-1 text-xs font-semibold text-[#07883b] dark:text-green-400">
+<span class="size-1.5 rounded-full bg-[#07883b] dark:bg-green-400"></span>
+                                        Enregistré
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-[#252f3e] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-9 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-100 text-xs font-bold">
+                                            MK
+                                        </div>
+<div>
+<p class="font-medium text-[#0d121b] dark:text-white">Moussa Konaté</p>
+<p class="text-xs text-[#4c669a] dark:text-[#64748b]">ML-332145</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#0d121b] dark:text-white font-medium">Résidence du Port</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">Saint-Louis</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">13:45</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 rounded-full bg-yellow-50 dark:bg-yellow-900/30 px-2.5 py-1 text-xs font-semibold text-[#b45309] dark:text-yellow-400">
+<span class="size-1.5 rounded-full bg-[#b45309] dark:bg-yellow-400"></span>
+                                        Vérification
+                                    </span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-[#252f3e] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 border border-[#cfd7e7]" data-alt="Portrait of Sarah Connor" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA9qz0TsNWrjlH2Zrlb6ssVPTmCHRsamJzVTCFU2X574uHyNh-p_K0LepXJpI73zlSO9pMnCWk6z1lkb6WOxg3qeCBTcdVvExG2gViztcQkyQIOoQAwT8K4SAy7o3m8d4M9ey0Z43gdi8gmlzOGfKaSz6FoIKTkvYMqSA2DxGCdNM2WwO_JaytC5gll8LFHPcrUpsYTROuoonpuPsmAmLP8BCXpQd3omdedB5ni7fCdr-1JO_Fw1OjueBl7y_xL-JyDPYodZ6dIzdni");'></div>
+<div>
+<p class="font-medium text-[#0d121b] dark:text-white">Sarah Connor</p>
+<p class="text-xs text-[#4c669a] dark:text-[#64748b]">US-987654</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#0d121b] dark:text-white font-medium">Lodge de la Petite Côte</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">Saly</td>
+<td class="px-6 py-4 text-[#4c669a] dark:text-[#94a3b8]">13:10</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-2.5 py-1 text-xs font-semibold text-[#07883b] dark:text-green-400">
+<span class="size-1.5 rounded-full bg-[#07883b] dark:bg-green-400"></span>
+                                        Enregistré
+                                    </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</div></body></html>

@@ -1,0 +1,143 @@
+# =====================================================
+# Gestoo - Intelligence Service Dockerfile
+# Multi-stage build for analytics and ML insights
+# =====================================================
+
+# -----------------------------------------------------
+# Stage 1: Base image with pnpm
+# -----------------------------------------------------
+FROM node:20-alpine AS base
+
+# Install pnpm globally
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for native modules
+RUN apk add --no-cache libc6-compat python3 make g++
+
+# -----------------------------------------------------
+# Stage 2: Dependencies installer
+# -----------------------------------------------------
+FROM base AS deps
+
+WORKDIR /app
+
+# Copy workspace configuration files
+COPY pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml* ./
+
+# Copy package.json files for all workspaces
+COPY services/intelligence-service/package.json ./services/intelligence-service/
+COPY packages/types/package.json ./packages/types/ 2>/dev/null || true
+COPY packages/shared/package.json ./packages/shared/ 2>/dev/null || true
+
+# Install all dependencies (including dev for build)
+RUN pnpm install --frozen-lockfile || pnpm install
+
+# -----------------------------------------------------
+# Stage 3: Builder
+# -----------------------------------------------------
+FROM base AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/services/intelligence-service/node_modules ./services/intelligence-service/node_modules 2>/dev/null || true
+
+# Copy source files
+COPY tsconfig.json ./
+COPY packages ./packages
+COPY services/intelligence-service ./services/intelligence-service
+
+# Build the application
+WORKDIR /app/services/intelligence-service
+RUN pnpm build || npm run build
+
+# -----------------------------------------------------
+# Stage 4: Production runner
+# -----------------------------------------------------
+FROM node:20-alpine AS production
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 gestoo
+
+WORKDIR /app
+
+# Install pnpm for running the app
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Copy workspace files
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/services/intelligence-service/dist ./services/intelligence-service/dist
+COPY --from=builder /app/services/intelligence-service/package.json ./services/intelligence-service/
+
+# Copy shared packages if they exist
+COPY --from=builder /app/packages ./packages 2>/dev/null || true
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown -R gestoo:nodejs /app/logs
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Switch to non-root user
+USER gestoo
+
+# Expose the service port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+
+# Set the working directory for the service
+WORKDIR /app/services/intelligence-service
+
+# Start the application
+CMD ["node", "dist/index.js"]
+
+# -----------------------------------------------------
+# Stage 5: Development runner
+# -----------------------------------------------------
+FROM base AS development
+
+WORKDIR /app
+
+# Install development tools
+RUN apk add --no-cache git wget
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy workspace configuration
+COPY pnpm-workspace.yaml package.json ./
+COPY tsconfig.json ./
+
+# Copy all source files (will be overridden by volume mount in dev)
+COPY packages ./packages
+COPY services/intelligence-service ./services/intelligence-service
+
+# Install all dependencies including devDependencies
+RUN pnpm install
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV PORT=5000
+ENV DEBUG=gestoo:*
+
+# Expose ports (app + debugger)
+EXPOSE 5000 9229
+
+# Set working directory
+WORKDIR /app/services/intelligence-service
+
+# Default command for development (can be overridden)
+CMD ["pnpm", "dev"]

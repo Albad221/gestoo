@@ -1,0 +1,8 @@
+{
+  "name": "dallal",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
