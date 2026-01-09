@@ -95,8 +95,8 @@ export default function MapPage() {
             .eq('status', 'open'),
         ]);
 
-        const propertiesData = propertiesResult.data as Property[] || [];
-        const alertsData = alertsResult.data as Alert[] || [];
+        const propertiesData = (propertiesResult.data as unknown as Property[]) || [];
+        const alertsData = (alertsResult.data as unknown as Alert[]) || [];
 
         setProperties(propertiesData);
         setAlerts(alertsData);
