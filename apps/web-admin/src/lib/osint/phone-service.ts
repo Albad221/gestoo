@@ -159,7 +159,7 @@ export async function verifyPhoneTwilio(phone: string): Promise<PhoneVerificatio
   }
 }
 
-function mapTwilioLineType(type: string): PhoneVerificationResult['data']['lineType'] {
+function mapTwilioLineType(type: string): NonNullable<PhoneVerificationResult['data']>['lineType'] {
   switch (type?.toLowerCase()) {
     case 'mobile': return 'mobile';
     case 'landline': return 'landline';
