@@ -312,7 +312,7 @@ export function runAllDocumentChecks(
   const results: {
     formatValid: boolean;
     mrzValid?: boolean;
-    checksumDetails?: MRZValidationResult['data']['checksumValid'];
+    checksumDetails?: NonNullable<MRZValidationResult['data']>['checksumValid'];
     details: string[];
   } = {
     formatValid: false,
