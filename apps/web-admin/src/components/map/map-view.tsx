@@ -9,10 +9,16 @@ interface Property {
   name: string;
   address: string;
   city: string;
+  region: string | null;
   status: 'pending' | 'active' | 'suspended' | 'rejected';
+  registration_number: string | null;
   latitude: number | null;
   longitude: number | null;
   type: string;
+  landlords?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 interface Alert {
@@ -20,6 +26,7 @@ interface Alert {
   title: string;
   type: string;
   severity: string;
+  location_city: string | null;
   latitude: number | null;
   longitude: number | null;
 }
