@@ -106,7 +106,9 @@ async function handleStart(
   if (!properties || properties.length === 0) {
     await sendMessage(
       phone,
-      "Vous n'avez pas encore de propriete active.\n\nVeuillez d'abord enregistrer une propriete."
+      "Vous n'avez pas encore de propriete active.
+
+Veuillez d'abord enregistrer une propriete."
     );
     await updateSession(phone, { state: 'IDLE' });
     return;
@@ -120,14 +122,23 @@ async function handleStart(
     });
     await sendMessage(
       phone,
-      `📍 ${properties[0].name}\n\n📸 Envoyez une photo du passeport ou CNI du client.\n\nOu tapez 'manuel' pour saisir manuellement.`
+      `📍 ${properties[0].name}
+
+📸 Envoyez une photo du passeport ou CNI du client.
+
+Ou tapez 'manuel' pour saisir manuellement.`
     );
   } else {
     await sendMessage(
       phone,
-      `Selectionnez la propriete:\n\n` +
-      properties.map((p, i) => `${i + 1}. ${p.name} (${p.city})`).join('\n') +
-      `\n\nRepondez avec le numero.`
+      `Selectionnez la propriete:
+
+` +
+      properties.map((p, i) => `${i + 1}. ${p.name} (${p.city})`).join('
+') +
+      `
+
+Repondez avec le numero.`
     );
     await updateSession(phone, {
       state: 'GUEST_CHECKIN_PROPERTY',
@@ -164,7 +175,11 @@ async function handlePropertySelection(
 
   await sendMessage(
     phone,
-    `📍 ${properties[selection - 1].name}\n\n📸 Envoyez une photo du passeport ou CNI.\n\nOu tapez 'manuel' pour saisir manuellement.`
+    `📍 ${properties[selection - 1].name}
+
+📸 Envoyez une photo du passeport ou CNI.
+
+Ou tapez 'manuel' pour saisir manuellement.`
   );
 }
 
@@ -176,7 +191,9 @@ async function handleDocumentUpload(
 ): Promise<void> {
   // Manual entry option
   if (message.type === 'text' && message.text?.body.toLowerCase() === 'manuel') {
-    await sendMessage(phone, "📝 Saisie manuelle\n\nNom complet du client? (Prenom NOM)");
+    await sendMessage(phone, "📝 Saisie manuelle
+
+Nom complet du client? (Prenom NOM)");
     await updateSession(phone, {
       state: 'GUEST_CHECKIN_MANUAL_NAME',
       data: { ...session.data, guest: guestData },
@@ -187,7 +204,9 @@ async function handleDocumentUpload(
   if (message.type !== 'image' && message.type !== 'document') {
     await sendMessage(
       phone,
-      "📸 Envoyez une photo du document.\n\nOu tapez 'manuel' pour saisir manuellement."
+      "📸 Envoyez une photo du document.
+
+Ou tapez 'manuel' pour saisir manuellement."
     );
     return;
   }
@@ -205,7 +224,9 @@ async function handleDocumentUpload(
     if (!validation.isValid && validation.confidence > 0.7) {
       await sendMessage(
         phone,
-        "⚠️ Image non reconnue comme document d'identite.\n\nRenvoyez une photo claire ou tapez 'manuel'."
+        "⚠️ Image non reconnue comme document d'identite.
+
+Renvoyez une photo claire ou tapez 'manuel'."
       );
       return;
     }
@@ -216,7 +237,10 @@ async function handleDocumentUpload(
     if (!ocrResult.success || !ocrResult.extractedData) {
       await sendMessage(
         phone,
-        "❌ Document illisible.\n\n1. Renvoyez une photo plus nette\n2. Tapez 'manuel' pour saisir"
+        "❌ Document illisible.
+
+1. Renvoyez une photo plus nette
+2. Tapez 'manuel' pour saisir"
       );
       return;
     }
@@ -245,18 +269,28 @@ async function handleDocumentUpload(
       other: 'Document',
     };
 
-    let msg = `✅ Document lu!\n\n`;
-    msg += `📄 ${docTypes[guestData.documentType || 'other']}\n`;
-    msg += `👤 ${guestData.firstName || '?'} ${guestData.lastName || '?'}\n`;
-    msg += `🔢 ${guestData.documentNumber || '?'}\n`;
-    msg += `🌍 ${guestData.nationality || '?'}\n`;
+    let msg = `✅ Document lu!
+
+`;
+    msg += `📄 ${docTypes[guestData.documentType || 'other']}
+`;
+    msg += `👤 ${guestData.firstName || '?'} ${guestData.lastName || '?'}
+`;
+    msg += `🔢 ${guestData.documentNumber || '?'}
+`;
+    msg += `🌍 ${guestData.nationality || '?'}
+`;
     msg += `📅 ${guestData.dateOfBirth || '?'}`;
 
     if (guestData.isMinor) {
-      msg += `\n\n⚠️ MINEUR (${guestData.age} ans)`;
+      msg += `
+
+⚠️ MINEUR (${guestData.age} ans)`;
     }
 
-    msg += `\n\nCorrect?`;
+    msg += `
+
+Correct?`;
 
     await sendInteractiveButtons(phone, msg, [
       { id: 'confirm_data', title: '✅ Oui' },
@@ -283,7 +317,9 @@ async function handleDataConfirmation(
 
   if (reply === 'confirm_data') {
     if (guestData.isMinor) {
-      await sendMessage(phone, "⚠️ Client mineur\n\nNom de l'accompagnateur adulte:");
+      await sendMessage(phone, "⚠️ Client mineur
+
+Nom de l'accompagnateur adulte:");
       await updateSession(phone, {
         state: 'GUEST_CHECKIN_GUARDIAN',
         data: { ...session.data, guest: guestData },
@@ -325,7 +361,12 @@ async function handleManualName(
   guestData.firstName = parts[0];
   guestData.lastName = parts.slice(1).join(' ') || parts[0];
 
-  await sendMessage(phone, "📄 Type de document?\n\n1. Passeport\n2. CNI\n3. Titre de sejour\n4. Autre");
+  await sendMessage(phone, "📄 Type de document?
+
+1. Passeport
+2. CNI
+3. Titre de sejour
+4. Autre");
   await updateSession(phone, {
     state: 'GUEST_CHECKIN_MANUAL_DOC_TYPE',
     data: { ...session.data, guest: guestData },
@@ -419,7 +460,9 @@ async function handleManualDOB(
   guestData.isMinor = guestData.age < 18;
 
   if (guestData.isMinor) {
-    await sendMessage(phone, `⚠️ Mineur (${guestData.age} ans)\n\nNom de l'accompagnateur:`);
+    await sendMessage(phone, `⚠️ Mineur (${guestData.age} ans)
+
+Nom de l'accompagnateur:`);
     await updateSession(phone, {
       state: 'GUEST_CHECKIN_GUARDIAN',
       data: { ...session.data, guest: guestData },
@@ -507,19 +550,30 @@ async function handleNumGuests(
 
   const tpt = 1000 * guestData.nights! * numGuests;
 
-  let summary = `📋 RESUME\n\n`;
-  summary += `👤 ${guestData.firstName} ${guestData.lastName}\n`;
-  summary += `📄 ${guestData.documentNumber}\n`;
-  summary += `🌍 ${guestData.nationality}\n`;
-  summary += `🌙 ${guestData.nights} nuit(s)\n`;
-  summary += `👥 ${numGuests} personne(s)\n`;
+  let summary = `📋 RESUME
+
+`;
+  summary += `👤 ${guestData.firstName} ${guestData.lastName}
+`;
+  summary += `📄 ${guestData.documentNumber}
+`;
+  summary += `🌍 ${guestData.nationality}
+`;
+  summary += `🌙 ${guestData.nights} nuit(s)
+`;
+  summary += `👥 ${numGuests} personne(s)
+`;
 
   if (guestData.isMinor) {
-    summary += `\n⚠️ MINEUR\n`;
-    summary += `👨‍👩‍👦 ${guestData.guardianName}\n`;
+    summary += `
+⚠️ MINEUR
+`;
+    summary += `👨‍👩‍👦 ${guestData.guardianName}
+`;
   }
 
-  summary += `\n💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA`;
+  summary += `
+💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA`;
 
   await sendInteractiveButtons(phone, summary, [
     { id: 'confirm_checkin', title: '✅ Confirmer' },
@@ -541,7 +595,9 @@ async function handleFinalConfirmation(
   const reply = message.interactive?.button_reply?.id;
 
   if (reply === 'cancel_checkin') {
-    await sendMessage(phone, "❌ Annule.\n\nTapez 'menu' pour continuer.");
+    await sendMessage(phone, "❌ Annule.
+
+Tapez 'menu' pour continuer.");
     await updateSession(phone, { state: 'IDLE', data: {} });
     return;
   }
@@ -628,7 +684,13 @@ async function handleFinalConfirmation(
 
     await sendMessage(
       phone,
-      `✅ Enregistre!\n\n👤 ${guestData.firstName} ${guestData.lastName}\n🌙 ${guestData.nights} nuit(s)\n💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA\n\nTapez 'menu' pour continuer.`
+      `✅ Enregistre!
+
+👤 ${guestData.firstName} ${guestData.lastName}
+🌙 ${guestData.nights} nuit(s)
+💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA
+
+Tapez 'menu' pour continuer.`
     );
 
     await updateSession(phone, { state: 'IDLE', data: {} });

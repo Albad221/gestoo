@@ -1,5 +1,5 @@
 {
-  "name": "@teranga-safe/scraper-service",
+  "name": "@gestoo/scraper-service",
   "version": "1.0.0",
   "description": "Web scraper for detecting illegal/unregistered accommodation listings",
   "type": "module",

@@ -265,7 +265,7 @@ export class BookingScraper extends BaseScraper {
           // Detect currency
           if (priceText.includes('FCFA') || priceText.includes('XOF') || priceText.includes('CFA')) {
             listing.currency = 'XOF';
-          } else if (priceText.includes('EUR') || priceText.includes('\u20ac')) {
+          } else if (priceText.includes('EUR') || priceText.includes('€')) {
             listing.currency = 'EUR';
           } else if (priceText.includes('$') || priceText.includes('USD')) {
             listing.currency = 'USD';
@@ -451,7 +451,7 @@ export class BookingScraper extends BaseScraper {
 
       // Determine currency
       let currency: string = 'XOF';
-      if (priceText.includes('EUR') || priceText.includes('\u20ac')) {
+      if (priceText.includes('EUR') || priceText.includes('€')) {
         currency = 'EUR';
       } else if (priceText.includes('$') || priceText.includes('USD')) {
         currency = 'USD';
@@ -612,7 +612,7 @@ export class BookingScraper extends BaseScraper {
     if (lower.includes('chambre') || lower.includes('room') || lower.includes('suite')) return 'room';
     if (
       lower.includes('hotel') ||
-      lower.includes('h\u00f4tel') ||
+      lower.includes('hôtel') ||
       lower.includes('resort')
     ) {
       return 'hotel';

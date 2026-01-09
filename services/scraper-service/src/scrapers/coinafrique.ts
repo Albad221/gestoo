@@ -195,7 +195,8 @@ export class CoinAfriqueScraper extends BaseScraper {
 
           // Extract title
           const titleElement = contextElement.find('h2, h3, [class*="title"], [class*="titre"]').first();
-          listing.title = titleElement.text().trim() || $(element).text().trim().split('\n')[0];
+          listing.title = titleElement.text().trim() || $(element).text().trim().split('
+')[0];
 
           // Extract price - look for CFA pattern
           const priceText = contextElement.text();

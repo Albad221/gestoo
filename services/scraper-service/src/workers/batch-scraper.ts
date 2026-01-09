@@ -82,7 +82,8 @@ export class BatchScraper {
 
     while (job.currentPage <= job.totalPages && this.isRunning && job.status === 'running') {
       try {
-        console.log(`\n[BatchScraper] Page ${job.currentPage}/${job.totalPages} (${Math.round(job.currentPage / job.totalPages * 100)}%)`);
+        console.log(`
+[BatchScraper] Page ${job.currentPage}/${job.totalPages} (${Math.round(job.currentPage / job.totalPages * 100)}%)`);
 
         // Scrape single page
         const listings = await this.scrapePage(scraper, job);
@@ -136,7 +137,8 @@ export class BatchScraper {
     }
     await this.saveJobProgress(job);
 
-    console.log(`\n[BatchScraper] Job ${job.status}`);
+    console.log(`
+[BatchScraper] Job ${job.status}`);
     console.log(`[BatchScraper] Total listings scraped: ${job.listingsScraped}`);
   }
 
@@ -314,7 +316,8 @@ async function main() {
 
       // Keep process running
       process.on('SIGINT', () => {
-        console.log('\nPausing job...');
+        console.log('
+Pausing job...');
         scraper.pause();
         setTimeout(() => process.exit(0), 2000);
       });

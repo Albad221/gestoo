@@ -402,8 +402,8 @@ export class MoondreamClient {
 
       // Check for gender indicators
       let gender: string | undefined;
-      if (/\b(man|male|homme|garcon|boy)\b/i.test(caption)) gender = 'male';
-      if (/\b(woman|female|femme|fille|girl)\b/i.test(caption)) gender = 'female';
+      if (/(man|male|homme|garcon|boy)/i.test(caption)) gender = 'male';
+      if (/(woman|female|femme|fille|girl)/i.test(caption)) gender = 'female';
 
       // Check for minor indicators
       const isLikelyMinor =
@@ -460,7 +460,8 @@ export class MoondreamClient {
   private parseDocumentText(rawText: string, documentType: DocumentType): ExtractedDocumentData {
     const data: ExtractedDocumentData = {};
     const text = rawText.toUpperCase();
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const lines = rawText.split('
+').map(l => l.trim()).filter(Boolean);
 
     // Document number patterns
     const docNumPatterns = [
@@ -503,8 +504,8 @@ export class MoondreamClient {
     if (nationalityMatch) data.nationality = this.cleanName(nationalityMatch[1]);
 
     // Gender
-    if (/\b(MALE|HOMME|MASCULIN|M)\b/.test(text)) data.gender = 'M';
-    if (/\b(FEMALE|FEMME|F[EÉ]MININ|F)\b/.test(text)) data.gender = 'F';
+    if (/(MALE|HOMME|MASCULIN|M)/.test(text)) data.gender = 'M';
+    if (/(FEMALE|FEMME|F[EÉ]MININ|F)/.test(text)) data.gender = 'F';
 
     // Place of birth
     const pobMatch = rawText.match(/(?:PLACE OF BIRTH|LIEU DE NAISSANCE|BIRTHPLACE)[:\s]*([A-Za-zÀ-ÿ\s\-']+)/i);
@@ -519,7 +520,7 @@ export class MoondreamClient {
 
   private cleanName(name: string): string {
     return name
-      .replace(/[<>\/\\]/g, ' ')
+      .replace(/[<>\/\]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
       .split(' ')

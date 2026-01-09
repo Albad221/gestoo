@@ -38,7 +38,8 @@ async function main() {
           },
         });
 
-        console.log('\nScrape job completed!');
+        console.log('
+Scrape job completed!');
         console.log(`- Listings found: ${result.listingsFound}`);
         console.log(`- New listings: ${result.listingsNew}`);
         console.log(`- Updated listings: ${result.listingsUpdated}`);
@@ -58,7 +59,9 @@ async function main() {
       try {
         const listings = await service.getUnregisteredListings({ city, limit });
 
-        console.log(`\nFound ${listings.length} potentially unregistered listings:\n`);
+        console.log(`
+Found ${listings.length} potentially unregistered listings:
+`);
 
         for (const listing of listings) {
           console.log(`- ${listing.title || 'No title'}`);
@@ -89,7 +92,8 @@ async function main() {
 
         const metrics = await service.generateMarketIntelligence(city, startDate, endDate);
 
-        console.log('\nMarket Intelligence Report');
+        console.log('
+Market Intelligence Report');
         console.log('==========================');
         console.log(`City: ${city}`);
         console.log(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
@@ -145,7 +149,8 @@ async function main() {
 
     default:
       console.log('Teranga Safe - Scraper Service CLI');
-      console.log('===================================\n');
+      console.log('===================================
+');
       console.log('Commands:');
       console.log('  scrape <platform> [city] [maxPages]  - Run a scrape job');
       console.log('  unregistered [city] [limit]          - List potentially unregistered properties');
