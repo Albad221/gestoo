@@ -275,7 +275,8 @@ async function enrichFromPhone(phone: string, profile: EnrichedProfile) {
         installationId: truecallerInstallationId,
       };
 
-      const response = await truecallerjs.search(searchData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await truecallerjs.search(searchData);
 
       // Get name
       const name = response.getName();
