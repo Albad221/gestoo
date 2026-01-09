@@ -1,6 +1,7 @@
 {
   "name": "dallal",
   "private": true,
+  "packageManager": "pnpm@10.27.0",
   "workspaces": [
     "apps/*",
     "packages/*"
