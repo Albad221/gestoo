@@ -58,7 +58,8 @@ export async function checkOpenSanctions(
     // Filter high-confidence matches (score > 0.7)
     const matches = results
       .filter((r: Record<string, unknown>) => (r.score as number) > 0.7)
-      .map((r: Record<string, unknown>) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => ({
         name: (r.caption as string) || (r.name as string) || '',
         listName: ((r.datasets as string[]) || []).join(', '),
         entityType: (r.schema as string) || 'Unknown',
