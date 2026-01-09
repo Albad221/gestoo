@@ -294,7 +294,7 @@ export async function runAllSanctionsChecks(
   ]);
 
   // Aggregate results
-  const allMatches = new Map<string, SanctionsCheckResult['data']['matches'][0]>();
+  const allMatches = new Map<string, NonNullable<SanctionsCheckResult['data']>['matches'][0]>();
 
   // Deduplicate matches by name
   [openSanctions, ofac, un, eu].forEach(result => {
