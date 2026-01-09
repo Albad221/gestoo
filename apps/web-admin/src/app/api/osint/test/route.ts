@@ -5,7 +5,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, input } = body;
 
-    const results: Record<string, unknown> = {
+    const results: {
+      timestamp: string;
+      input: string;
+      type: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      checks: Record<string, any>;
+    } = {
       timestamp: new Date().toISOString(),
       input,
       type,
