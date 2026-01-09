@@ -335,7 +335,7 @@ function extractPlatformId(url: string, platform: string): string {
 }
 
 async function matchWithRegisteredProperties(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<unknown>>,
   listing: ScrapedListing
 ): Promise<{ matchedPropertyId: string | null; isCompliant: boolean; confidence: number }> {
 
@@ -422,7 +422,7 @@ function calculateSimilarity(str1: string, str2: string): number {
 }
 
 async function createUnregisteredPropertyAlert(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<unknown>>,
   savedListing: { id: string; city: string },
   listing: ScrapedListing
 ): Promise<void> {
