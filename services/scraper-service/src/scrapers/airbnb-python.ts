@@ -123,7 +123,7 @@ export class AirbnbPythonScraper {
     return {
       platform: 'airbnb',
       platformId: listing.platform_id,
-      url: listing.url,
+      url: listing.url || `https://airbnb.com/rooms/${listing.platform_id}`,
       title: listing.title,
       pricePerNight: listing.price,
       currency: 'USD', // Airbnb defaults to USD

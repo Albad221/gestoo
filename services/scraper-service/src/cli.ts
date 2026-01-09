@@ -38,8 +38,7 @@ async function main() {
           },
         });
 
-        console.log('
-Scrape job completed!');
+        console.log('\nScrape job completed!');
         console.log(`- Listings found: ${result.listingsFound}`);
         console.log(`- New listings: ${result.listingsNew}`);
         console.log(`- Updated listings: ${result.listingsUpdated}`);
@@ -92,8 +91,7 @@ Found ${listings.length} potentially unregistered listings:
 
         const metrics = await service.generateMarketIntelligence(city, startDate, endDate);
 
-        console.log('
-Market Intelligence Report');
+        console.log('\nMarket Intelligence Report');
         console.log('==========================');
         console.log(`City: ${city}`);
         console.log(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
@@ -148,9 +146,8 @@ Market Intelligence Report');
     }
 
     default:
-      console.log('Teranga Safe - Scraper Service CLI');
-      console.log('===================================
-');
+      console.log('Gestoo - Scraper Service CLI');
+      console.log('=============================\n');
       console.log('Commands:');
       console.log('  scrape <platform> [city] [maxPages]  - Run a scrape job');
       console.log('  unregistered [city] [limit]          - List potentially unregistered properties');

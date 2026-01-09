@@ -316,8 +316,7 @@ async function main() {
 
       // Keep process running
       process.on('SIGINT', () => {
-        console.log('
-Pausing job...');
+        console.log('\nPausing job...');
         scraper.pause();
         setTimeout(() => process.exit(0), 2000);
       });
