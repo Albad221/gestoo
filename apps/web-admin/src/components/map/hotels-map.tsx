@@ -6,15 +6,25 @@ import 'leaflet/dist/leaflet.css';
 
 interface Hotel {
   id: string;
+  platform_id: string;
   title: string;
   city: string;
+  location_text: string;
   latitude: number | null;
   longitude: number | null;
   rating: number | null;
+  num_reviews: number | null;
+  url: string;
+  photos: string[];
   raw_data: {
     phone?: string;
+    website?: string;
     property_type?: string;
+    price_level?: number;
+    business_status?: string;
   } | null;
+  created_at: string;
+  last_seen_at: string;
 }
 
 interface HotelsMapProps {
