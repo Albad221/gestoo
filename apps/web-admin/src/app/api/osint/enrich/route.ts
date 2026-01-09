@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import truecallerjs from 'truecallerjs';
+import * as truecallerjs from 'truecallerjs';
 
 interface EnrichedProfile {
   input: { type: string; value: string };
