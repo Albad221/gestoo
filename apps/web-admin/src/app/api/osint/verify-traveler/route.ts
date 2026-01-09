@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import truecallerjs from 'truecallerjs';
+import * as truecallerjs from 'truecallerjs';
 import { checkEmailWithHolehe } from '@/lib/osint/holehe';
 
 /**
@@ -263,7 +263,8 @@ async function verifyPhone(phone: string, documentName: string, result: Verifica
         installationId: truecallerInstallationId,
       };
 
-      const response = await truecallerjs.search(searchData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await truecallerjs.search(searchData);
       const rawData = response.json();
 
       // Get name and compare
