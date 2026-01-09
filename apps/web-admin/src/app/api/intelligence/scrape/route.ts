@@ -399,7 +399,7 @@ async function matchWithRegisteredProperties(
 
   // Consider it a match if score > 50
   const isMatch = bestMatch && bestMatch.score > 50;
-  const matchedProperty = isMatch ? properties.find(p => p.id === bestMatch!.id) : null;
+  const matchedProperty = isMatch ? properties.find((p: { id: string; registration_number: string | null }) => p.id === bestMatch!.id) : null;
 
   return {
     matchedPropertyId: isMatch ? bestMatch!.id : null,
