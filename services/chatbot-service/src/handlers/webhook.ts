@@ -8,6 +8,8 @@ import type { WhatsAppMessage } from '@gestoo/types';
  * Receives incoming messages from WATI and routes them to the appropriate flow
  */
 export async function webhookHandler(req: Request, res: Response) {
+  console.log('[WEBHOOK] Received request:', JSON.stringify(req.body, null, 2));
+
   try {
     const payload = req.body as WatiWebhookPayload;
 
@@ -16,11 +18,13 @@ export async function webhookHandler(req: Request, res: Response) {
 
     // Skip if this is an outgoing message (from us)
     if (payload.owner === true) {
+      console.log('[WEBHOOK] Skipping outgoing message (owner=true)');
       return;
     }
 
     // Skip status updates
     if (payload.statusString && payload.statusString !== 'RECEIVED') {
+      console.log('[WEBHOOK] Skipping status update:', payload.statusString);
       return;
     }
 
