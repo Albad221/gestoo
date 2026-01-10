@@ -15,6 +15,7 @@ interface Property {
   latitude: number | null;
   longitude: number | null;
   type: string;
+  source?: 'properties' | 'hotels';
   landlords?: {
     first_name: string;
     last_name: string;
@@ -141,7 +142,9 @@ export default function MapView({ properties, alerts, selectedProperty, onSelect
     properties.forEach((property) => {
       if (property.latitude && property.longitude) {
         const isSelected = selectedProperty?.id === property.id;
-        const color = property.status === 'active' ? '#135bec' :
+        // Hotels from scraped_listings get orange color, properties get blue/yellow/gray based on status
+        const color = property.source === 'hotels' ? '#f97316' :
+                      property.status === 'active' ? '#135bec' :
                       property.status === 'pending' ? '#eab308' : '#6b7280';
 
         const marker = L.marker([property.latitude, property.longitude], {

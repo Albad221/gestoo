@@ -16,6 +16,7 @@ interface Property {
   latitude: number | null;
   longitude: number | null;
   type: string;
+  source?: 'properties' | 'hotels';
   landlords?: {
     first_name: string;
     last_name: string;
@@ -59,7 +60,7 @@ export default function MapPage() {
       const supabase = createClient();
 
       try {
-        const [propertiesResult, alertsResult, staysCount, alertCounts] = await Promise.all([
+        const [propertiesResult, hotelsResult, alertsResult, staysCount, alertCounts] = await Promise.all([
           supabase
             .from('properties')
             .select(`
@@ -80,6 +81,13 @@ export default function MapPage() {
             `)
             .not('latitude', 'is', null)
             .not('longitude', 'is', null),
+          // Also fetch hotels from scraped_listings
+          supabase
+            .from('scraped_listings')
+            .select('id, title, address, city, latitude, longitude, raw_data, platform')
+            .eq('platform', 'google_places')
+            .not('latitude', 'is', null)
+            .not('longitude', 'is', null),
           supabase
             .from('alerts')
             .select('id, title, type, severity, location_city, latitude, longitude')
@@ -95,10 +103,32 @@ export default function MapPage() {
             .eq('status', 'open'),
         ]);
 
-        const propertiesData = (propertiesResult.data as unknown as Property[]) || [];
+        // Map properties with source tag
+        const propertiesData = (propertiesResult.data || []).map((p: any) => ({
+          ...p,
+          source: 'properties' as const,
+        })) as Property[];
+
+        // Map hotels from scraped_listings to same format
+        const hotelsData = (hotelsResult.data || []).map((h: any) => ({
+          id: h.id,
+          name: h.title,
+          address: h.address || '',
+          city: h.city || '',
+          region: null,
+          status: 'active' as const,
+          registration_number: null,
+          latitude: h.latitude,
+          longitude: h.longitude,
+          type: h.raw_data?.property_type || 'hotel',
+          source: 'hotels' as const,
+        })) as Property[];
+
+        // Combine both sources
+        const allProperties = [...propertiesData, ...hotelsData];
         const alertsData = (alertsResult.data as unknown as Alert[]) || [];
 
-        setProperties(propertiesData);
+        setProperties(allProperties);
         setAlerts(alertsData);
 
         const criticalCount = alertCounts.data?.filter(a => a.severity === 'critical').length || 0;
@@ -107,11 +137,11 @@ export default function MapPage() {
           checkins: staysCount.count || 0,
           activeAlerts: alertsData.length,
           criticalAlerts: criticalCount,
-          visibleProperties: propertiesData.length,
+          visibleProperties: allProperties.length,
         });
 
-        if (propertiesData.length > 0) {
-          setSelectedProperty(propertiesData[0]);
+        if (allProperties.length > 0) {
+          setSelectedProperty(allProperties[0]);
         }
       } catch (error) {
         console.error('Error fetching map data:', error);
