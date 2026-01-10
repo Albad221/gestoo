@@ -493,10 +493,75 @@ export default function PropertiesPage() {
         ))}
       </div>
 
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden" style={{ height: '600px' }}>
+          <HotelsMap
+            hotels={filteredProperties.map(p => ({
+              id: p.id,
+              title: p.name,
+              city: p.city,
+              latitude: p.latitude,
+              longitude: p.longitude,
+              rating: p.rating || null,
+              num_reviews: p.num_reviews || null,
+              raw_data: { phone: p.phone, property_type: p.type },
+            }))}
+            selectedHotel={selectedProperty ? {
+              id: selectedProperty.id,
+              title: selectedProperty.name,
+              city: selectedProperty.city,
+              latitude: selectedProperty.latitude,
+              longitude: selectedProperty.longitude,
+              rating: selectedProperty.rating || null,
+              num_reviews: selectedProperty.num_reviews || null,
+              raw_data: { phone: selectedProperty.phone, property_type: selectedProperty.type },
+            } : null}
+            onSelectHotel={(hotel) => {
+              const prop = filteredProperties.find(p => p.id === hotel.id);
+              if (prop) setSelectedProperty(prop);
+            }}
+          />
+        </div>
+      )}
+
       {/* Properties Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {viewMode !== 'map' && (
+      <div className={`grid gap-6 ${viewMode === 'split' ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}`}>
+        {/* Map Panel for Split View */}
+        {viewMode === 'split' && (
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden" style={{ height: '700px' }}>
+            <HotelsMap
+              hotels={filteredProperties.map(p => ({
+                id: p.id,
+                title: p.name,
+                city: p.city,
+                latitude: p.latitude,
+                longitude: p.longitude,
+                rating: p.rating || null,
+                num_reviews: p.num_reviews || null,
+                raw_data: { phone: p.phone, property_type: p.type },
+              }))}
+              selectedHotel={selectedProperty ? {
+                id: selectedProperty.id,
+                title: selectedProperty.name,
+                city: selectedProperty.city,
+                latitude: selectedProperty.latitude,
+                longitude: selectedProperty.longitude,
+                rating: selectedProperty.rating || null,
+                num_reviews: selectedProperty.num_reviews || null,
+                raw_data: { phone: selectedProperty.phone, property_type: selectedProperty.type },
+              } : null}
+              onSelectHotel={(hotel) => {
+                const prop = filteredProperties.find(p => p.id === hotel.id);
+                if (prop) setSelectedProperty(prop);
+              }}
+            />
+          </div>
+        )}
+
         {/* Properties List */}
-        <div className="lg:col-span-2">
+        <div className={viewMode === 'split' ? '' : 'lg:col-span-2'}>
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             {loading ? (
               <div className="flex items-center justify-center py-12">
@@ -997,6 +1062,7 @@ export default function PropertiesPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Rejection Modal */}
       {showRejectModal && selectedProperty && (
