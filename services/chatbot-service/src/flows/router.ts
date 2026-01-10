@@ -1,6 +1,6 @@
 import type { WhatsAppMessage, ChatbotState } from '@gestoo/types';
 import { getSession, updateSession } from '../lib/session.js';
-import { sendMessage, sendInteractiveButtons, sendInteractiveList } from '../lib/whatsapp.js';
+import { sendMessage, sendInteractiveButtons, sendInteractiveList } from '../lib/wati.js';
 
 // Flow handlers
 import { handleOnboarding } from './onboarding.js';

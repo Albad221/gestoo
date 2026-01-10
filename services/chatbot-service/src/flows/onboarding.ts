@@ -1,6 +1,6 @@
 import type { WhatsAppMessage, ChatbotSession, CreateLandlordInput } from '@gestoo/types';
 import { updateSession } from '../lib/session.js';
-import { sendMessage, sendInteractiveButtons } from '../lib/whatsapp.js';
+import { sendMessage, sendInteractiveButtons } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
 
 export async function handleOnboarding(

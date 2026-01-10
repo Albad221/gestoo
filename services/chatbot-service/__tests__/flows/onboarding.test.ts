@@ -5,7 +5,7 @@ vi.mock('../../src/lib/session.js', () => ({
   updateSession: vi.fn(),
 }));
 
-vi.mock('../../src/lib/whatsapp.js', () => ({
+vi.mock('../../src/lib/wati.js', () => ({
   sendMessage: vi.fn(),
   sendInteractiveButtons: vi.fn(),
 }));
@@ -18,7 +18,7 @@ vi.mock('../../src/lib/supabase.js', () => ({
 
 // Import mocked modules
 import { updateSession } from '../../src/lib/session.js';
-import { sendMessage, sendInteractiveButtons } from '../../src/lib/whatsapp.js';
+import { sendMessage, sendInteractiveButtons } from '../../src/lib/wati.js';
 import { supabase } from '../../src/lib/supabase.js';
 
 // Types
