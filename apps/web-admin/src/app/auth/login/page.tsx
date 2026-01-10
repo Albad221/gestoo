@@ -87,7 +87,7 @@ export default function AdminLoginPage() {
               </div>
               <div>
                 <h1 className="text-white text-2xl font-black tracking-tight leading-none">
-                  Teranga Safe
+                  Gestoo
                 </h1>
                 <span className="text-blue-200 text-xs font-medium uppercase tracking-wider">
                   République du Sénégal
@@ -132,7 +132,7 @@ export default function AdminLoginPage() {
           <div className="lg:hidden absolute top-0 left-0 w-full p-6 flex justify-between items-center bg-primary text-white">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl">verified_user</span>
-              <span className="font-bold text-lg">Teranga Safe</span>
+              <span className="font-bold text-lg">Gestoo</span>
             </div>
           </div>
 
@@ -251,7 +251,7 @@ export default function AdminLoginPage() {
               <div className="text-center mt-2">
                 <a
                   className="text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300 text-sm font-semibold transition-colors"
-                  href="mailto:support@teranga-safe.gouv.sn"
+                  href="mailto:support@gestoo.sn"
                 >
                   Problème de connexion ?
                 </a>

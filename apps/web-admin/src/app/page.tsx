@@ -21,7 +21,7 @@ export default function Home() {
             </svg>
           </div>
           <h1 className="mt-4 text-2xl font-bold text-gray-900">
-            Teranga Safe
+            Gestoo
           </h1>
           <p className="mt-2 text-sm text-gray-600">
             Portail d&apos;Administration

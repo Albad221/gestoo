@@ -168,7 +168,7 @@ export function Sidebar({
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-gray-900 dark:text-white leading-none">
-              Teranga Safe
+              Gestoo
             </span>
             <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">
               Administration

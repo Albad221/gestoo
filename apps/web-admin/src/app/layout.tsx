@@ -9,7 +9,7 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Teranga Safe - Administration',
+  title: 'Gestoo - Administration',
   description: 'Tableau de bord Police et Ministère du Tourisme',
 };
 
