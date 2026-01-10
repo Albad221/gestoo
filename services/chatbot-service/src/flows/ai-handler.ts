@@ -120,6 +120,13 @@ export async function handleWithAI(
 
   if (message.type === 'text' && message.text?.body) {
     userMessage = message.text.body;
+
+    // Handle reset command
+    if (userMessage.toLowerCase().trim() === 'reset' || userMessage.toLowerCase().trim() === '/reset') {
+      await updateSession(phone, { state: 'IDLE', landlord_id: null, data: {} });
+      await sendMessage(phone, '🔄 Session réinitialisée. Envoyez un message pour recommencer.');
+      return;
+    }
   } else if (message.type === 'interactive') {
     // Handle button/list replies
     const buttonReply = message.interactive?.button_reply;
