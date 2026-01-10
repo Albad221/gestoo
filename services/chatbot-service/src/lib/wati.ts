@@ -456,7 +456,7 @@ export async function sendMessage(to: string, text: string): Promise<WatiMessage
   return watiRequest<WatiMessageResponse>({
     method: 'POST',
     endpoint: `sendSessionMessage/${phone}`,
-    body: { messageText: truncatedText },
+    queryParams: { messageText: truncatedText },
   });
 }
 
