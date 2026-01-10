@@ -1221,25 +1221,38 @@ export function parseWatiWebhook(payload: WatiWebhookPayload): ParsedMessage {
       console.log('[WATI] - data:', payload.data);
       console.log('[WATI] - sourceUrl:', payload.sourceUrl);
       if (payload.data || payload.sourceUrl) {
-        try {
-          const imageData = payload.data ? JSON.parse(payload.data) : {};
-          // Prefer sourceUrl (direct WhatsApp CDN URL) over constructed URL
-          const directUrl = payload.sourceUrl || imageData.url;
+        // Check if data is already a full URL (WATI sends direct URLs)
+        const isDataUrl = payload.data?.startsWith('http');
+
+        if (isDataUrl) {
+          // data IS the URL - use it directly
           result.image = {
-            id: imageData.id || imageData.fileName || payload.data || 'unknown',
-            url: directUrl || getMediaUrl(imageData.fileName),
-            mimeType: imageData.mimeType || imageData.mime_type || 'image/jpeg',
-            caption: imageData.caption,
-          };
-          console.log('[WATI] - parsed image:', result.image);
-        } catch {
-          // Handle non-JSON data format - use sourceUrl if available
-          result.image = {
-            id: payload.data || 'unknown',
-            url: payload.sourceUrl || getMediaUrl(payload.data || ''),
+            id: payload.data,
+            url: payload.data,
             mimeType: 'image/jpeg',
           };
-          console.log('[WATI] - fallback image:', result.image);
+          console.log('[WATI] - direct URL image:', result.image);
+        } else {
+          try {
+            const imageData = payload.data ? JSON.parse(payload.data) : {};
+            // Prefer sourceUrl (direct WhatsApp CDN URL) over constructed URL
+            const directUrl = payload.sourceUrl || imageData.url;
+            result.image = {
+              id: imageData.id || imageData.fileName || payload.data || 'unknown',
+              url: directUrl || getMediaUrl(imageData.fileName),
+              mimeType: imageData.mimeType || imageData.mime_type || 'image/jpeg',
+              caption: imageData.caption,
+            };
+            console.log('[WATI] - parsed image:', result.image);
+          } catch {
+            // Handle non-JSON data format - use sourceUrl if available
+            result.image = {
+              id: payload.data || 'unknown',
+              url: payload.sourceUrl || getMediaUrl(payload.data || ''),
+              mimeType: 'image/jpeg',
+            };
+            console.log('[WATI] - fallback image:', result.image);
+          }
         }
       }
       break;
