@@ -36,15 +36,19 @@ async function handleOnboardingStart(
   message: WhatsAppMessage,
   session: ChatbotSession
 ): Promise<void> {
+  const lang = session.data?.language || 'fr';
+  const isWolof = lang === 'wo';
+
+  // Handle button replies
   if (message.type === 'interactive' && message.interactive?.button_reply) {
     const reply = message.interactive.button_reply.id;
 
     if (reply === 'new_user') {
-      await sendMessage(
-        phone,
-        `Bienvenue ! 🎉\n\nPour vous inscrire, j'ai besoin de quelques informations.\n\nQuel est votre nom complet ?`
-      );
-      await updateSession(phone, { state: 'ONBOARDING_NAME', data: {} });
+      const msg = isWolof
+        ? "Dalal ak jamm! 🎉\n\nNgir bindu, soxla naa ay xbaar.\n\nNaka sa tur bu bees?"
+        : "Bienvenue ! 🎉\n\nPour vous inscrire, j'ai besoin de quelques informations.\n\nQuel est votre nom complet ?";
+      await sendMessage(phone, msg);
+      await updateSession(phone, { state: 'ONBOARDING_NAME', data: { language: lang } });
     } else if (reply === 'existing_user') {
       // Try to find existing landlord by phone
       const { data: landlord } = await supabase
@@ -54,25 +58,73 @@ async function handleOnboardingStart(
         .single();
 
       if (landlord) {
-        await sendMessage(
-          phone,
-          `Bon retour, ${landlord.full_name} ! 👋\n\nVotre compte a été retrouvé.`
-        );
+        const msg = isWolof
+          ? `Dalal ak jamm, ${landlord.full_name}! 👋\n\nSa compte gis nañu ko.`
+          : `Bon retour, ${landlord.full_name} ! 👋\n\nVotre compte a été retrouvé.`;
+        await sendMessage(phone, msg);
         await updateSession(phone, {
           state: 'IDLE',
           landlord_id: landlord.id,
+          data: { language: lang },
         });
       } else {
-        await sendMessage(
-          phone,
-          `Je ne trouve pas de compte associé à ce numéro.\n\nSouhaitez-vous créer un nouveau compte ?`
-        );
+        const msg = isWolof
+          ? "Gisuma compte bu ëpp ci bii numero.\n\nBëgg nga sos compte bu bees?"
+          : "Je ne trouve pas de compte associé à ce numéro.\n\nSouhaitez-vous créer un nouveau compte ?";
+        await sendMessage(phone, msg);
         await sendInteractiveButtons(phone, 'Inscription', [
-          { id: 'new_user', title: 'Créer un compte' },
-          { id: 'help', title: 'Contacter le support' },
+          { id: 'new_user', title: isWolof ? 'Sos compte' : 'Créer un compte' },
+          { id: 'help', title: isWolof ? 'Ndimbal' : 'Contacter le support' },
         ]);
       }
     }
+    return;
+  }
+
+  // Handle text messages - detect intent or re-show buttons
+  if (message.type === 'text' && message.text?.body) {
+    const text = message.text.body.toLowerCase().trim();
+
+    // Check if user wants to register
+    const registerWords = ['oui', 'yes', 'nouveau', 'inscrire', 'waaw', 'créer', 'new'];
+    const existingWords = ['déjà', 'already', 'compte', 'inscrit', 'existing', 'bindu naa'];
+
+    if (registerWords.some(w => text.includes(w))) {
+      const msg = isWolof
+        ? "Baax! Dinaa la dimbal bindu.\n\nNaka sa tur bu bees?"
+        : "Parfait ! Je vais vous aider à vous inscrire.\n\nQuel est votre nom complet ?";
+      await sendMessage(phone, msg);
+      await updateSession(phone, { state: 'ONBOARDING_NAME', data: { language: lang } });
+      return;
+    }
+
+    if (existingWords.some(w => text.includes(w))) {
+      // Try to find existing landlord
+      const { data: landlord } = await supabase
+        .from('landlords')
+        .select('id, full_name')
+        .eq('phone', phone)
+        .single();
+
+      if (landlord) {
+        const msg = isWolof
+          ? `Dalal ak jamm, ${landlord.full_name}! 👋`
+          : `Bon retour, ${landlord.full_name} ! 👋`;
+        await sendMessage(phone, msg);
+        await updateSession(phone, { state: 'IDLE', landlord_id: landlord.id, data: { language: lang } });
+        return;
+      }
+    }
+
+    // Default: re-show the buttons
+    const msg = isWolof
+      ? "Ndax bindu nga ci Gestoo?"
+      : "Êtes-vous déjà inscrit sur Gestoo ?";
+    await sendMessage(phone, msg);
+    await sendInteractiveButtons(phone, 'Inscription', [
+      { id: 'new_user', title: isWolof ? 'Bindu (Nouveau)' : 'Nouveau propriétaire' },
+      { id: 'existing_user', title: isWolof ? 'Bindu naa (Déjà)' : 'Déjà inscrit' },
+    ]);
   }
 }
 
