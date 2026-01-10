@@ -57,7 +57,7 @@ interface Property {
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pending: { label: 'En attente', className: 'bg-yellow-100 text-yellow-800' },
+  pending: { label: 'Demande d\'homologation', className: 'bg-yellow-100 text-yellow-800' },
   active: { label: 'Active', className: 'bg-green-100 text-green-800' },
   suspended: { label: 'Suspendue', className: 'bg-red-100 text-red-800' },
   rejected: { label: 'Rejetee', className: 'bg-gray-100 text-gray-800' },
@@ -120,7 +120,10 @@ export default function PropertiesPage() {
       }
 
       // Fetch scraped listings via API (to bypass RLS)
-      const scrapedPromise = sourceFilter !== 'registered'
+      // Don't fetch scraped listings when viewing pending (homologation requests) or rejected
+      const shouldFetchScraped = sourceFilter !== 'registered' &&
+        statusFilter !== 'pending' && statusFilter !== 'rejected';
+      const scrapedPromise = shouldFetchScraped
         ? fetch('/api/etablissements').then(res => res.json()).then(data => ({ hotels: data.hotels || [] }))
         : Promise.resolve({ hotels: [] });
 
@@ -474,8 +477,8 @@ export default function PropertiesPage() {
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         {[
           { value: 'all', label: 'Toutes' },
-          { value: 'pending', label: 'En attente' },
-          { value: 'active', label: 'Actives' },
+          { value: 'pending', label: 'Demandes d\'homologation' },
+          { value: 'active', label: 'Homologuées' },
           { value: 'suspended', label: 'Suspendues' },
           { value: 'rejected', label: 'Rejetées' },
         ].map((tab) => (

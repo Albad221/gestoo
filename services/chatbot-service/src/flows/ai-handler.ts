@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { analyzeImage, formatExtractedInfo, type ExtractedDocument } from '../lib/ocr.js';
 import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKey } from '../lib/wave.js';
+import { extractTextFromPDF, isPDF, formatPDFForAnalysis } from '../lib/pdf-converter.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -40,22 +41,23 @@ Tu es chaleureuse, professionnelle et naturelle. Tu parles comme une vraie Seneg
 ## CONTEXTE
 {{USER_CONTEXT}}
 
-## WORKFLOW COMPLET
+## WORKFLOW COMPLET - ETAPE PAR ETAPE
 
-### 1. INSCRIPTION BAILLEUR
-- Collecter: nom complet + NIN (Numero d'Identification Nationale)
-- Le NIN est sur la carte CEDEAO biometrique (different du numero de carte)
+### 1. INSCRIPTION BAILLEUR (etapes separees)
+ETAPE 1a: Demande la CNI/passeport du bailleur UNIQUEMENT
+ETAPE 1b: Une fois recu, extrais nom + NIN et confirme
 - Action: "create_landlord" avec data: { full_name, nin }
 
-### 2. HOMOLOGATION PROPRIETE (obligatoire avant de louer)
-- Le bailleur doit faire homologuer son bien AVANT de pouvoir enregistrer des locataires
-- Documents requis: titre de propriete ou bail, photos du bien
-- Action: "request_homologation" - la demande sera examinee par l'administration
+### 2. HOMOLOGATION PROPRIETE (etapes separees, obligatoire avant de louer)
+ETAPE 2a: Demande le titre de propriete ou bail UNIQUEMENT (pas les photos en meme temps!)
+ETAPE 2b: Une fois recu, confirme et demande UNE photo du bien
+ETAPE 2c: Une fois la photo recue, lance la demande d'homologation
+- Action: "request_homologation" avec data: { full_name, location, property_type, address, city }
 - Statut: en_attente -> approuve / rejete
 
 ### 3. CHECK-IN LOCATAIRES (seulement si propriete homologuee)
-- Scanner passeport ou CNI du locataire
-- Enregistrer: nom, nationalite, dates sejour, nombre de personnes
+ETAPE 3a: Demande le passeport ou CNI du locataire UNIQUEMENT
+ETAPE 3b: Une fois recu, demande les dates de sejour et nombre de personnes
 - Calculer TPT: 1000 FCFA/nuit/personne
 - Action: "create_guest" avec les infos du locataire
 
@@ -72,13 +74,20 @@ Tu es chaleureuse, professionnelle et naturelle. Tu parles comme une vraie Seneg
   "language": "fr" | "wo"
 }
 
-## IMPORTANT
+## REGLES CRITIQUES
+
+### COLLECTE DE DOCUMENTS - UNE SEULE CHOSE A LA FOIS
+- JAMAIS demander plusieurs documents en meme temps
+- JAMAIS dire "envoyez votre CNI ET les photos" - c'est INTERDIT
+- Toujours proceder etape par etape: un document, attendre, puis le suivant
+- Apres chaque document recu, confirmer ce qui a ete extrait avant de demander le suivant
+
+### AUTRES REGLES
 - Sois naturelle et conversationnelle, pas robotique
 - En Wolof, parle comme on parle vraiment a Dakar
 - Extrais le NIN (pas le numero de carte) quand l'utilisateur envoie sa CNI
 - NE DIS JAMAIS que tu as cree un compte si tu n'as pas le nom ET le NIN
 - Si tu recois une photo mais pas de NIN lisible, DEMANDE a l'utilisateur de taper son NIN
-- Utilise "create_landlord" UNIQUEMENT quand tu as: full_name ET nin dans data
 - Un bailleur DOIT homologuer son bien avant de pouvoir enregistrer des locataires
 
 ## REGLE ABSOLUE
@@ -164,6 +173,57 @@ export async function handleWithAI(
     } catch (e) {
       console.error('[AI] Failed to download/process image:', e);
       userMessage = '[Photo envoyée mais erreur de téléchargement]';
+    }
+  } else if (message.type === 'document' && message.document) {
+    // Handle PDF and other document types
+    console.log('[AI] Document received:', JSON.stringify(message.document, null, 2));
+    try {
+      const doc = message.document as { id: string; url?: string; mimeType?: string; filename?: string };
+      const docUrl = doc.url;
+      const mimeType = doc.mimeType || '';
+      const filename = doc.filename || 'document';
+
+      console.log('[AI] Document URL:', docUrl);
+      console.log('[AI] Document MIME type:', mimeType);
+
+      if (docUrl) {
+        console.log('[AI] Downloading document from URL:', docUrl);
+        const docBuffer = await downloadMediaFromUrl(docUrl);
+
+        // Check if it's a PDF
+        if (mimeType.includes('pdf') || filename.endsWith('.pdf') || isPDF(docBuffer)) {
+          console.log('[AI] Processing PDF document...');
+          const pdfInfo = await extractTextFromPDF(docBuffer);
+
+          if (pdfInfo && pdfInfo.text.length > 50) {
+            console.log('[AI] PDF text extracted successfully');
+            userMessage = formatPDFForAnalysis(pdfInfo);
+          } else {
+            // If text extraction fails, try as image (first page)
+            console.log('[AI] PDF text extraction failed, trying as image...');
+            // For now, just indicate we received a PDF
+            userMessage = '[Document PDF reçu - Veuillez envoyer une photo ou capture d\'écran du document pour un meilleur traitement]';
+          }
+        } else if (mimeType.includes('image')) {
+          // It's an image sent as document
+          console.log('[AI] Image sent as document, processing...');
+          imageBuffer = docBuffer;
+          extractedDoc = await analyzeImage(imageBuffer);
+
+          if (extractedDoc && extractedDoc.confidence > 50) {
+            userMessage = `[Document image reçu - OCR réussi]\n${formatExtractedInfo(extractedDoc)}`;
+          } else {
+            userMessage = '[Document image reçu - OCR échoué]';
+          }
+        } else {
+          userMessage = `[Document reçu: ${filename}] - Format non supporté. Veuillez envoyer une photo ou un PDF.`;
+        }
+      } else {
+        userMessage = '[Document reçu mais URL non disponible]';
+      }
+    } catch (e) {
+      console.error('[AI] Failed to process document:', e);
+      userMessage = '[Document reçu mais erreur de traitement]';
     }
   }
 
