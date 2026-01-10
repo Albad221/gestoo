@@ -13,7 +13,11 @@ const GREETING_KEYWORDS = ['bonjour', 'salut', 'hello', 'hi', 'bonsoir'];
 
 export async function processMessage(message: WhatsAppMessage): Promise<void> {
   const phone = message.from;
+  console.log(`[ROUTER] Processing message from ${phone}, type: ${message.type}`);
+
   const session = await getSession(phone);
+  console.log(`[ROUTER] Session state: ${session.state}, landlord_id: ${session.landlord_id || 'none'}`);
+
 
   // Handle text messages
   if (message.type === 'text' && message.text) {
@@ -27,18 +31,24 @@ export async function processMessage(message: WhatsAppMessage): Promise<void> {
 
     // Check for greetings (new conversation)
     if (GREETING_KEYWORDS.includes(text) && session.state === 'IDLE') {
+      console.log(`[ROUTER] Greeting detected from ${phone}`);
       if (session.landlord_id) {
-        await sendMessage(phone, `Bienvenue ! 👋\nQue souhaitez-vous faire aujourd'hui ?`);
+        console.log(`[ROUTER] Returning user, showing main menu`);
+        const result = await sendMessage(phone, `Bienvenue ! 👋\nQue souhaitez-vous faire aujourd'hui ?`);
+        console.log(`[ROUTER] sendMessage result:`, JSON.stringify(result));
         await showMainMenu(phone, session.landlord_id);
       } else {
-        await sendMessage(
+        console.log(`[ROUTER] New user, showing onboarding`);
+        const result = await sendMessage(
           phone,
           `Bienvenue sur Gestoo ! 🇸🇳\n\nJe suis votre assistant pour la gestion de vos hébergements.\n\nÊtes-vous déjà inscrit sur notre plateforme ?`
         );
-        await sendInteractiveButtons(phone, 'Inscription', [
+        console.log(`[ROUTER] sendMessage result:`, JSON.stringify(result));
+        const buttonResult = await sendInteractiveButtons(phone, 'Inscription', [
           { id: 'new_user', title: 'Nouveau propriétaire' },
           { id: 'existing_user', title: 'Déjà inscrit' },
         ]);
+        console.log(`[ROUTER] sendInteractiveButtons result:`, JSON.stringify(buttonResult));
         await updateSession(phone, { state: 'ONBOARDING_START' });
       }
       return;
@@ -83,10 +93,12 @@ export async function processMessage(message: WhatsAppMessage): Promise<void> {
       break;
 
     default:
-      await sendMessage(
+      console.log(`[ROUTER] Unknown state ${session.state} for ${phone}, sending help message`);
+      const result = await sendMessage(
         phone,
         "Je n'ai pas compris votre message. Tapez 'menu' pour voir les options disponibles."
       );
+      console.log(`[ROUTER] sendMessage result:`, JSON.stringify(result));
   }
 }
 

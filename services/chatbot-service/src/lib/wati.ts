@@ -199,8 +199,8 @@ export interface ParsedMessage {
   location?: { latitude: number; longitude: number; name?: string; address?: string };
   interactive?: {
     type: 'button_reply' | 'list_reply';
-    buttonReply?: { id: string; title: string };
-    listReply?: { id: string; title: string; description?: string };
+    button_reply?: { id: string; title: string };
+    list_reply?: { id: string; title: string; description?: string };
   };
   sticker?: { id: string; url: string };
   contacts?: Array<{
@@ -453,11 +453,16 @@ export async function sendMessage(to: string, text: string): Promise<WatiMessage
   // WhatsApp has a 4096 character limit for text messages
   const truncatedText = text.substring(0, 4096);
 
-  return watiRequest<WatiMessageResponse>({
+  console.log(`[WATI] Sending message to ${phone}: "${truncatedText.substring(0, 50)}..."`);
+
+  const result = await watiRequest<WatiMessageResponse>({
     method: 'POST',
     endpoint: `sendSessionMessage/${phone}`,
     queryParams: { messageText: truncatedText },
   });
+
+  console.log(`[WATI] sendMessage result:`, JSON.stringify(result));
+  return result;
 }
 
 /**
@@ -1318,7 +1323,7 @@ export function parseWatiWebhook(payload: WatiWebhookPayload): ParsedMessage {
       if (payload.listReply) {
         result.interactive = {
           type: 'list_reply',
-          listReply: {
+          list_reply: {
             id: payload.listReply.id,
             title: payload.listReply.title,
             description: payload.listReply.description,
@@ -1328,7 +1333,7 @@ export function parseWatiWebhook(payload: WatiWebhookPayload): ParsedMessage {
         const buttonData = payload.interactiveButtonReply || payload.buttonReply;
         result.interactive = {
           type: 'button_reply',
-          buttonReply: {
+          button_reply: {
             id: buttonData!.id,
             title: buttonData!.title,
           },

@@ -42,7 +42,8 @@ export async function webhookHandler(req: Request, res: Response) {
     await processMessage(message as unknown as WhatsAppMessage);
 
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error('[WEBHOOK] Error processing message:', error);
+    console.error('[WEBHOOK] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     // Don't send error response - we already sent 200
   }
 }
