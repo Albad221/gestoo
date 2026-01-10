@@ -1,14 +1,14 @@
-import type { WhatsAppMessage, ChatbotSession } from '@gestoo/types';
+import type { WhatsAppMessage, ChatbotSession, DocumentType } from '@gestoo/types';
 import { updateSession } from '../lib/session.js';
 import { sendMessage, sendInteractiveButtons, downloadMedia } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
-import { extractDocumentData, isValidDocument } from '../lib/moondream.js';
+import { extractDocumentData, isValidDocument, type DocumentType as OCRDocumentType } from '../lib/moondream.js';
 
 interface GuestData {
   firstName?: string;
   lastName?: string;
   nationality?: string;
-  documentType?: 'passport' | 'national_id' | 'residence_permit' | 'other';
+  documentType?: DocumentType | OCRDocumentType;
   documentNumber?: string;
   dateOfBirth?: string;
   isMinor?: boolean;
@@ -106,9 +106,9 @@ async function handleStart(
   if (!properties || properties.length === 0) {
     await sendMessage(
       phone,
-      "Vous n'avez pas encore de propriete active.
+      `Vous n'avez pas encore de propriete active.
 
-Veuillez d'abord enregistrer une propriete."
+Veuillez d'abord enregistrer une propriete.`
     );
     await updateSession(phone, { state: 'IDLE' });
     return;
@@ -134,8 +134,7 @@ Ou tapez 'manuel' pour saisir manuellement.`
       `Selectionnez la propriete:
 
 ` +
-      properties.map((p, i) => `${i + 1}. ${p.name} (${p.city})`).join('
-') +
+      properties.map((p, i) => `${i + 1}. ${p.name} (${p.city})`).join('\n') +
       `
 
 Repondez avec le numero.`
@@ -159,7 +158,7 @@ async function handlePropertySelection(
   }
 
   const selection = parseInt(message.text.body.trim());
-  const properties = session.data?.properties || [];
+  const properties = (session.data?.properties || []) as Array<{ id: string; name: string; city: string }>;
 
   if (isNaN(selection) || selection < 1 || selection > properties.length) {
     await sendMessage(phone, `Entrez un numero entre 1 et ${properties.length}.`);
@@ -191,9 +190,9 @@ async function handleDocumentUpload(
 ): Promise<void> {
   // Manual entry option
   if (message.type === 'text' && message.text?.body.toLowerCase() === 'manuel') {
-    await sendMessage(phone, "📝 Saisie manuelle
+    await sendMessage(phone, `📝 Saisie manuelle
 
-Nom complet du client? (Prenom NOM)");
+Nom complet du client? (Prenom NOM)`);
     await updateSession(phone, {
       state: 'GUEST_CHECKIN_MANUAL_NAME',
       data: { ...session.data, guest: guestData },
@@ -204,9 +203,9 @@ Nom complet du client? (Prenom NOM)");
   if (message.type !== 'image' && message.type !== 'document') {
     await sendMessage(
       phone,
-      "📸 Envoyez une photo du document.
+      `📸 Envoyez une photo du document.
 
-Ou tapez 'manuel' pour saisir manuellement."
+Ou tapez 'manuel' pour saisir manuellement.`
     );
     return;
   }
@@ -224,9 +223,9 @@ Ou tapez 'manuel' pour saisir manuellement."
     if (!validation.isValid && validation.confidence > 0.7) {
       await sendMessage(
         phone,
-        "⚠️ Image non reconnue comme document d'identite.
+        `⚠️ Image non reconnue comme document d'identite.
 
-Renvoyez une photo claire ou tapez 'manuel'."
+Renvoyez une photo claire ou tapez 'manuel'.`
       );
       return;
     }
@@ -237,10 +236,10 @@ Renvoyez une photo claire ou tapez 'manuel'."
     if (!ocrResult.success || !ocrResult.extractedData) {
       await sendMessage(
         phone,
-        "❌ Document illisible.
+        `❌ Document illisible.
 
 1. Renvoyez une photo plus nette
-2. Tapez 'manuel' pour saisir"
+2. Tapez 'manuel' pour saisir`
       );
       return;
     }
@@ -269,28 +268,18 @@ Renvoyez une photo claire ou tapez 'manuel'."
       other: 'Document',
     };
 
-    let msg = `✅ Document lu!
-
-`;
-    msg += `📄 ${docTypes[guestData.documentType || 'other']}
-`;
-    msg += `👤 ${guestData.firstName || '?'} ${guestData.lastName || '?'}
-`;
-    msg += `🔢 ${guestData.documentNumber || '?'}
-`;
-    msg += `🌍 ${guestData.nationality || '?'}
-`;
+    let msg = `✅ Document lu!\n\n`;
+    msg += `📄 ${docTypes[guestData.documentType || 'other']}\n`;
+    msg += `👤 ${guestData.firstName || '?'} ${guestData.lastName || '?'}\n`;
+    msg += `🔢 ${guestData.documentNumber || '?'}\n`;
+    msg += `🌍 ${guestData.nationality || '?'}\n`;
     msg += `📅 ${guestData.dateOfBirth || '?'}`;
 
     if (guestData.isMinor) {
-      msg += `
-
-⚠️ MINEUR (${guestData.age} ans)`;
+      msg += `\n\n⚠️ MINEUR (${guestData.age} ans)`;
     }
 
-    msg += `
-
-Correct?`;
+    msg += `\n\nCorrect?`;
 
     await sendInteractiveButtons(phone, msg, [
       { id: 'confirm_data', title: '✅ Oui' },
@@ -317,9 +306,9 @@ async function handleDataConfirmation(
 
   if (reply === 'confirm_data') {
     if (guestData.isMinor) {
-      await sendMessage(phone, "⚠️ Client mineur
+      await sendMessage(phone, `⚠️ Client mineur
 
-Nom de l'accompagnateur adulte:");
+Nom de l'accompagnateur adulte:`);
       await updateSession(phone, {
         state: 'GUEST_CHECKIN_GUARDIAN',
         data: { ...session.data, guest: guestData },
@@ -361,12 +350,12 @@ async function handleManualName(
   guestData.firstName = parts[0];
   guestData.lastName = parts.slice(1).join(' ') || parts[0];
 
-  await sendMessage(phone, "📄 Type de document?
+  await sendMessage(phone, `📄 Type de document?
 
 1. Passeport
 2. CNI
 3. Titre de sejour
-4. Autre");
+4. Autre`);
   await updateSession(phone, {
     state: 'GUEST_CHECKIN_MANUAL_DOC_TYPE',
     data: { ...session.data, guest: guestData },
@@ -460,9 +449,7 @@ async function handleManualDOB(
   guestData.isMinor = guestData.age < 18;
 
   if (guestData.isMinor) {
-    await sendMessage(phone, `⚠️ Mineur (${guestData.age} ans)
-
-Nom de l'accompagnateur:`);
+    await sendMessage(phone, `⚠️ Mineur (${guestData.age} ans)\n\nNom de l'accompagnateur:`);
     await updateSession(phone, {
       state: 'GUEST_CHECKIN_GUARDIAN',
       data: { ...session.data, guest: guestData },
@@ -550,30 +537,19 @@ async function handleNumGuests(
 
   const tpt = 1000 * guestData.nights! * numGuests;
 
-  let summary = `📋 RESUME
-
-`;
-  summary += `👤 ${guestData.firstName} ${guestData.lastName}
-`;
-  summary += `📄 ${guestData.documentNumber}
-`;
-  summary += `🌍 ${guestData.nationality}
-`;
-  summary += `🌙 ${guestData.nights} nuit(s)
-`;
-  summary += `👥 ${numGuests} personne(s)
-`;
+  let summary = `📋 RESUME\n\n`;
+  summary += `👤 ${guestData.firstName} ${guestData.lastName}\n`;
+  summary += `📄 ${guestData.documentNumber}\n`;
+  summary += `🌍 ${guestData.nationality}\n`;
+  summary += `🌙 ${guestData.nights} nuit(s)\n`;
+  summary += `👥 ${numGuests} personne(s)\n`;
 
   if (guestData.isMinor) {
-    summary += `
-⚠️ MINEUR
-`;
-    summary += `👨‍👩‍👦 ${guestData.guardianName}
-`;
+    summary += `\n⚠️ MINEUR\n`;
+    summary += `👨‍👩‍👦 ${guestData.guardianName}\n`;
   }
 
-  summary += `
-💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA`;
+  summary += `\n💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA`;
 
   await sendInteractiveButtons(phone, summary, [
     { id: 'confirm_checkin', title: '✅ Confirmer' },
@@ -595,9 +571,9 @@ async function handleFinalConfirmation(
   const reply = message.interactive?.button_reply?.id;
 
   if (reply === 'cancel_checkin') {
-    await sendMessage(phone, "❌ Annule.
+    await sendMessage(phone, `❌ Annule.
 
-Tapez 'menu' pour continuer.");
+Tapez 'menu' pour continuer.`);
     await updateSession(phone, { state: 'IDLE', data: {} });
     return;
   }

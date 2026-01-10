@@ -58,7 +58,7 @@ import {
   normalizePhone,
   PAYMENT_ERROR_CODES,
   DEFAULT_CURRENCY,
-} from '@gestoo/shared-types/payments';
+} from '@gestoo/types/payments';
 
 // ============================================
 // TYPES
@@ -562,8 +562,8 @@ export class PaymentService {
     // Update payment record if status changed
     if (newStatus !== payment.status) {
       await this.updatePaymentStatus(payment.id, newStatus, {
-        wave_transaction_id: session.transaction_id,
-        provider_status: session.payment_status,
+        wave_transaction_id: session.transaction_id ?? undefined,
+        provider_status: session.payment_status ?? undefined,
       });
     }
 
@@ -698,9 +698,9 @@ export class PaymentService {
 
       // Update payment record
       await this.updatePaymentStatus(payment.id, newStatus, {
-        wave_transaction_id: sessionData.transaction_id,
-        provider_status: sessionData.payment_status,
-        webhook_events: [...(payment.metadata?.webhook_events || []), event.id],
+        wave_transaction_id: sessionData.transaction_id ?? undefined,
+        provider_status: sessionData.payment_status ?? undefined,
+        webhook_events: [...((payment.metadata?.webhook_events as string[]) || []), event.id],
       });
 
       // Generate receipt if payment completed

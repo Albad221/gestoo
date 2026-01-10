@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@teranga/types'],
+  transpilePackages: ['@gestoo/types'],
   images: {
     remotePatterns: [
       {

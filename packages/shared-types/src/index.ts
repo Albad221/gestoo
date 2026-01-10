@@ -380,19 +380,31 @@ export type ChatbotState =
   | 'ADD_PROPERTY_PHOTOS'
   | 'ADD_PROPERTY_CONFIRM'
   | 'GUEST_CHECKIN_START'
+  | 'GUEST_CHECKIN_PROPERTY'
   | 'GUEST_CHECKIN_DOCUMENT'
+  | 'GUEST_CHECKIN_CONFIRM_DATA'
   | 'GUEST_CHECKIN_CONFIRM'
+  | 'GUEST_CHECKIN_MANUAL_NAME'
+  | 'GUEST_CHECKIN_MANUAL_DOC_TYPE'
+  | 'GUEST_CHECKIN_MANUAL_DOC_NUM'
+  | 'GUEST_CHECKIN_MANUAL_NATIONALITY'
+  | 'GUEST_CHECKIN_MANUAL_DOB'
   | 'GUEST_CHECKIN_GUARDIAN'
+  | 'GUEST_CHECKIN_GUARDIAN_PHONE'
+  | 'GUEST_CHECKIN_NIGHTS'
+  | 'GUEST_CHECKIN_NUM_GUESTS'
   | 'GUEST_CHECKOUT_SELECT'
   | 'GUEST_CHECKOUT_CONFIRM'
   | 'PAY_TPT_VIEW'
   | 'PAY_TPT_METHOD'
   | 'PAY_TPT_CONFIRM'
+  | 'PAY_TPT_PENDING'
   | 'VIEW_HISTORY'
   | 'VIEW_BALANCE'
   | 'HELP';
 
 export interface ChatbotSession {
+  id?: string;
   phone: string;
   state: ChatbotState;
   landlord_id?: string;
@@ -408,10 +420,12 @@ export interface WhatsAppMessage {
   from: string;
   id: string;
   timestamp: string;
-  type: 'text' | 'image' | 'document' | 'location' | 'interactive' | 'button';
+  type: 'text' | 'image' | 'document' | 'location' | 'interactive' | 'button' | 'video' | 'audio' | 'sticker' | 'contacts' | 'voice' | 'reaction' | 'order' | 'catalog' | 'media_placeholder';
   text?: { body: string };
-  image?: { id: string; mime_type: string; sha256: string };
-  document?: { id: string; mime_type: string; sha256: string; filename: string };
+  image?: { id: string; mime_type: string; sha256?: string };
+  document?: { id: string; mime_type: string; sha256?: string; filename: string };
+  video?: { id: string; mime_type: string; sha256?: string };
+  audio?: { id: string; mime_type: string; sha256?: string };
   location?: { latitude: number; longitude: number; name?: string; address?: string };
   interactive?: {
     type: 'button_reply' | 'list_reply';

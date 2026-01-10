@@ -42,11 +42,7 @@ async function handleOnboardingStart(
     if (reply === 'new_user') {
       await sendMessage(
         phone,
-        "Bienvenue ! 🎉
-
-Pour vous inscrire, j'ai besoin de quelques informations.
-
-Quel est votre nom complet ?"
+        `Bienvenue ! 🎉\n\nPour vous inscrire, j'ai besoin de quelques informations.\n\nQuel est votre nom complet ?`
       );
       await updateSession(phone, { state: 'ONBOARDING_NAME', data: {} });
     } else if (reply === 'existing_user') {
@@ -60,9 +56,7 @@ Quel est votre nom complet ?"
       if (landlord) {
         await sendMessage(
           phone,
-          `Bon retour, ${landlord.full_name} ! 👋
-
-Votre compte a été retrouvé.`
+          `Bon retour, ${landlord.full_name} ! 👋\n\nVotre compte a été retrouvé.`
         );
         await updateSession(phone, {
           state: 'IDLE',
@@ -71,9 +65,7 @@ Votre compte a été retrouvé.`
       } else {
         await sendMessage(
           phone,
-          "Je ne trouve pas de compte associé à ce numéro.
-
-Souhaitez-vous créer un nouveau compte ?"
+          `Je ne trouve pas de compte associé à ce numéro.\n\nSouhaitez-vous créer un nouveau compte ?`
         );
         await sendInteractiveButtons(phone, 'Inscription', [
           { id: 'new_user', title: 'Créer un compte' },
@@ -108,9 +100,7 @@ async function handleOnboardingName(
 
   await sendMessage(
     phone,
-    `Merci, ${fullName} !
-
-Maintenant, veuillez entrer votre numéro de CNI (Carte Nationale d'Identité).`
+    `Merci, ${fullName} !\n\nMaintenant, veuillez entrer votre numéro de CNI (Carte Nationale d'Identité).`
   );
 }
 
@@ -142,9 +132,7 @@ async function handleOnboardingCni(
 
   await sendMessage(
     phone,
-    'Parfait ! 📸
-
-Pour vérifier votre identité, veuillez envoyer une photo de votre CNI (recto).'
+    `Parfait ! 📸\n\nPour vérifier votre identité, veuillez envoyer une photo de votre CNI (recto).`
   );
 }
 
@@ -156,9 +144,7 @@ async function handleOnboardingCniPhoto(
   if (message.type !== 'image') {
     await sendMessage(
       phone,
-      "Veuillez envoyer une photo de votre CNI.
-
-Si vous n'avez pas votre CNI sous la main, tapez 'plus tard' pour continuer sans."
+      `Veuillez envoyer une photo de votre CNI.\n\nSi vous n'avez pas votre CNI sous la main, tapez 'plus tard' pour continuer sans.`
     );
     return;
   }
@@ -171,19 +157,11 @@ Si vous n'avez pas votre CNI sous la main, tapez 'plus tard' pour continuer sans
     data: { ...session.data, cni_photo_id: cniPhotoId },
   });
 
-  const data = session.data as CreateLandlordInput & { cni_photo_id?: string };
+  const data = session.data as unknown as CreateLandlordInput & { cni_photo_id?: string };
 
   await sendMessage(
     phone,
-    `✅ Photo reçue !
-
-Récapitulatif de votre inscription :
-
-👤 Nom : ${data.full_name}
-🆔 CNI : ${data.cni_number}
-📱 Téléphone : ${phone}
-
-Confirmez-vous ces informations ?`
+    `✅ Photo reçue !\n\nRécapitulatif de votre inscription :\n\n👤 Nom : ${data.full_name}\n🆔 CNI : ${data.cni_number}\n📱 Téléphone : ${phone}\n\nConfirmez-vous ces informations ?`
   );
 
   await sendInteractiveButtons(phone, 'Confirmation', [
@@ -206,14 +184,12 @@ async function handleOnboardingConfirm(
 
   if (reply === 'restart') {
     await updateSession(phone, { state: 'ONBOARDING_NAME', data: {} });
-    await sendMessage(phone, "D'accord, recommençons.
-
-Quel est votre nom complet ?");
+    await sendMessage(phone, `D'accord, recommençons.\n\nQuel est votre nom complet ?`);
     return;
   }
 
   if (reply === 'confirm') {
-    const data = session.data as CreateLandlordInput & { cni_photo_id?: string };
+    const data = session.data as unknown as CreateLandlordInput & { cni_photo_id?: string };
 
     // Create landlord in database
     const { data: landlord, error } = await supabase
@@ -244,16 +220,7 @@ Quel est votre nom complet ?");
 
     await sendMessage(
       phone,
-      `🎉 Félicitations, ${data.full_name} !
-
-Votre compte Gestoo a été créé avec succès.
-
-Vous pouvez maintenant :
-• Enregistrer vos propriétés
-• Déclarer vos locataires
-• Payer la TPT
-
-Tapez 'menu' pour commencer !`
+      `🎉 Félicitations, ${data.full_name} !\n\nVotre compte Gestoo a été créé avec succès.\n\nVous pouvez maintenant :\n• Enregistrer vos propriétés\n• Déclarer vos locataires\n• Payer la TPT\n\nTapez 'menu' pour commencer !`
     );
   }
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { processMessage } from '../flows/router.js';
 import { parseWatiWebhook, WatiWebhookPayload } from '../lib/wati.js';
+import type { WhatsAppMessage } from '@gestoo/types';
 
 /**
  * WATI Webhook Handler
@@ -33,8 +34,8 @@ export async function webhookHandler(req: Request, res: Response) {
       hasDocument: !!message.document,
     });
 
-    // Process the message
-    await processMessage(message);
+    // Process the message (cast to WhatsAppMessage as parsed message is compatible)
+    await processMessage(message as unknown as WhatsAppMessage);
 
   } catch (error) {
     console.error('Webhook error:', error);

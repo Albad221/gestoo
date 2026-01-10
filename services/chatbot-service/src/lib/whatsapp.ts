@@ -136,7 +136,7 @@ export async function downloadMedia(mediaId: string): Promise<Buffer> {
     throw new Error(`Failed to get media URL: ${urlResponse.status}`);
   }
 
-  const { url } = await urlResponse.json();
+  const { url } = (await urlResponse.json()) as { url: string };
 
   // Then download the actual media
   const mediaResponse = await fetch(url, {

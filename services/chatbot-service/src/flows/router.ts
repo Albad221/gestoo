@@ -28,17 +28,12 @@ export async function processMessage(message: WhatsAppMessage): Promise<void> {
     // Check for greetings (new conversation)
     if (GREETING_KEYWORDS.includes(text) && session.state === 'IDLE') {
       if (session.landlord_id) {
-        await sendMessage(phone, `Bienvenue ! 👋
-Que souhaitez-vous faire aujourd'hui ?`);
+        await sendMessage(phone, `Bienvenue ! 👋\nQue souhaitez-vous faire aujourd'hui ?`);
         await showMainMenu(phone, session.landlord_id);
       } else {
         await sendMessage(
           phone,
-          `Bienvenue sur Gestoo ! 🇸🇳
-
-Je suis votre assistant pour la gestion de vos hébergements.
-
-Êtes-vous déjà inscrit sur notre plateforme ?`
+          `Bienvenue sur Gestoo ! 🇸🇳\n\nJe suis votre assistant pour la gestion de vos hébergements.\n\nÊtes-vous déjà inscrit sur notre plateforme ?`
         );
         await sendInteractiveButtons(phone, 'Inscription', [
           { id: 'new_user', title: 'Nouveau propriétaire' },
@@ -108,17 +103,13 @@ async function handleIdleState(
     switch (reply) {
       case 'add_property':
         await updateSession(phone, { state: 'ADD_PROPERTY_START' });
-        await sendMessage(phone, "Parfait ! Commençons l'enregistrement de votre propriété.
-
-Quel est le nom de votre établissement ?");
+        await sendMessage(phone, `Parfait ! Commençons l'enregistrement de votre propriété.\n\nQuel est le nom de votre établissement ?`);
         await updateSession(phone, { state: 'ADD_PROPERTY_NAME' });
         break;
 
       case 'guest_checkin':
         await updateSession(phone, { state: 'GUEST_CHECKIN_START' });
-        await sendMessage(phone, "Enregistrement d'un nouveau locataire.
-
-Veuillez envoyer une photo du passeport ou de la CNI du client.");
+        await sendMessage(phone, `Enregistrement d'un nouveau locataire.\n\nVeuillez envoyer une photo du passeport ou de la CNI du client.`);
         await updateSession(phone, { state: 'GUEST_CHECKIN_DOCUMENT' });
         break;
 

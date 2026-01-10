@@ -135,7 +135,7 @@ export class MoondreamClient {
       throw new Error(`Moondream caption error: ${response.status}`);
     }
 
-    const result: CaptionResponse = await response.json();
+    const result = (await response.json()) as CaptionResponse;
     return result.caption;
   }
 
@@ -158,7 +158,7 @@ export class MoondreamClient {
       throw new Error(`Moondream OCR error: ${response.status}`);
     }
 
-    const result: OCRResponse = await response.json();
+    const result = (await response.json()) as OCRResponse;
     return result.text;
   }
 
@@ -179,7 +179,7 @@ export class MoondreamClient {
       throw new Error(`Moondream detect error: ${response.status}`);
     }
 
-    const result: DetectionResponse = await response.json();
+    const result = (await response.json()) as DetectionResponse;
     return result.objects.map(box => ({
       label: objectName,
       boundingBox: box,
@@ -460,8 +460,7 @@ export class MoondreamClient {
   private parseDocumentText(rawText: string, documentType: DocumentType): ExtractedDocumentData {
     const data: ExtractedDocumentData = {};
     const text = rawText.toUpperCase();
-    const lines = rawText.split('
-').map(l => l.trim()).filter(Boolean);
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
 
     // Document number patterns
     const docNumPatterns = [
@@ -520,7 +519,7 @@ export class MoondreamClient {
 
   private cleanName(name: string): string {
     return name
-      .replace(/[<>\/\]/g, ' ')
+      .replace(/[<>\/\\]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
       .split(' ')

@@ -402,7 +402,7 @@ async function watiRequest<T = any>(options: RequestOptions): Promise<T> {
       // Parse successful response
       const contentType = response.headers.get('Content-Type');
       if (contentType?.includes('application/json')) {
-        return await response.json();
+        return (await response.json()) as T;
       }
 
       // Return raw response for binary data

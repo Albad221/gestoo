@@ -12,14 +12,14 @@ import { supabase } from '../lib/supabase.js';
 import {
   getPaymentService,
   type InitiatePaymentOptions,
-  type PaymentProvider,
 } from '../lib/payment-service.js';
 import { getUSSDInstructions } from '../lib/orange-money.js';
 import {
+  type PaymentProvider,
   formatAmountFCFA,
   getProviderDisplayName,
   getPaymentErrorMessage,
-} from '@gestoo/shared-types/payments';
+} from '@gestoo/types/payments';
 
 // ============================================
 // PAYMENT FLOW HANDLER
@@ -71,9 +71,9 @@ async function handleViewBalance(phone: string, session: ChatbotSession): Promis
   if (!liabilities || liabilities.length === 0) {
     await sendMessage(
       phone,
-      "Vous n'avez pas de TPT en attente de paiement.
+      `Vous n'avez pas de TPT en attente de paiement.
 
-Tapez 'menu' pour continuer."
+Tapez 'menu' pour continuer.`
     );
     await updateSession(phone, { state: 'IDLE' });
     return;
@@ -98,12 +98,7 @@ Tapez 'menu' pour continuer."
 
   await sendMessage(
     phone,
-    `Solde TPT a payer
-
-Nombre de declarations : ${liabilities.length}
-Montant total : ${formatAmountFCFA(totalDue)}
-
-Comment souhaitez-vous payer ?`
+    `Solde TPT a payer\n\nNombre de declarations : ${liabilities.length}\nMontant total : ${formatAmountFCFA(totalDue)}\n\nComment souhaitez-vous payer ?`
   );
 
   await sendInteractiveButtons(phone, 'Mode de paiement', [
@@ -160,12 +155,7 @@ async function handleSelectMethod(
 
   await sendMessage(
     phone,
-    `Paiement ${getProviderDisplayName(method)}
-
-Montant : ${formatAmountFCFA(totalDue)}
-Numero : ${phone}
-
-Confirmez-vous ce paiement ?`
+    `Paiement ${getProviderDisplayName(method)}\n\nMontant : ${formatAmountFCFA(totalDue)}\nNumero : ${phone}\n\nConfirmez-vous ce paiement ?`
   );
 
   await sendInteractiveButtons(phone, 'Confirmation', [
@@ -232,9 +222,7 @@ async function handlePaymentConfirm(
 
     await sendMessage(
       phone,
-      `${errorMessage}
-
-Veuillez reessayer ou choisir un autre mode de paiement.`
+      `${errorMessage}\n\nVeuillez reessayer ou choisir un autre mode de paiement.`
     );
     await updateSession(phone, { state: 'PAY_TPT_METHOD' });
     return;
@@ -300,11 +288,7 @@ async function handlePaymentPending(
     if (statusResult.status === 'completed') {
       await sendMessage(
         phone,
-        `Votre paiement a ete confirme!
-
-Vous allez recevoir votre recu par SMS.
-
-Tapez 'menu' pour continuer.`
+        `Votre paiement a ete confirme!\n\nVous allez recevoir votre recu par SMS.\n\nTapez 'menu' pour continuer.`
       );
       await updateSession(phone, { state: 'IDLE', data: {} });
       return;
@@ -312,10 +296,7 @@ Tapez 'menu' pour continuer.`
 
     await sendMessage(
       phone,
-      `Vous avez un paiement en attente.
-
-Tapez 'status' pour verifier le statut
-Tapez 'annuler' pour annuler le paiement`
+      `Vous avez un paiement en attente.\n\nTapez 'status' pour verifier le statut\nTapez 'annuler' pour annuler le paiement`
     );
     return;
   }
@@ -323,10 +304,7 @@ Tapez 'annuler' pour annuler le paiement`
   // Default message for pending state
   await sendMessage(
     phone,
-    `Votre paiement est en attente de confirmation.
-
-Tapez 'status' pour verifier le statut
-Tapez 'annuler' pour annuler le paiement`
+    `Votre paiement est en attente de confirmation.\n\nTapez 'status' pour verifier le statut\nTapez 'annuler' pour annuler le paiement`
   );
 }
 
@@ -343,24 +321,14 @@ async function sendOrangeMoneyInstructions(
 
   await sendMessage(
     phone,
-    `*Paiement Orange Money*
-
-Montant : ${formatAmountFCFA(amount)}
-Reference : ${result.providerReference?.substring(0, 12) || 'N/A'}
-
-${ussdInstructions}
-
-Vous avez 15 minutes pour effectuer ce paiement.
-
-Vous recevrez une confirmation une fois le paiement effectue.`
+    `*Paiement Orange Money*\n\nMontant : ${formatAmountFCFA(amount)}\nReference : ${result.providerReference?.substring(0, 12) || 'N/A'}\n\n${ussdInstructions}\n\nVous avez 15 minutes pour effectuer ce paiement.\n\nVous recevrez une confirmation une fois le paiement effectue.`
   );
 
   // Send payment URL if available
   if (result.paymentUrl) {
     await sendMessage(
       phone,
-      `Vous pouvez aussi payer en cliquant sur ce lien:
-${result.paymentUrl}`
+      `Vous pouvez aussi payer en cliquant sur ce lien:\n${result.paymentUrl}`
     );
   }
 }
@@ -374,30 +342,12 @@ async function sendWaveInstructions(
   if (result.paymentUrl) {
     await sendMessage(
       phone,
-      `*Paiement Wave*
-
-Montant : ${formatAmountFCFA(amount)}
-
-Cliquez sur le lien ci-dessous pour payer:
-${result.paymentUrl}
-
-Ou ouvrez votre application Wave pour verifier la demande de paiement.`
+      `*Paiement Wave*\n\nMontant : ${formatAmountFCFA(amount)}\n\nCliquez sur le lien ci-dessous pour payer:\n${result.paymentUrl}\n\nOu ouvrez votre application Wave pour verifier la demande de paiement.`
     );
   } else {
     await sendMessage(
       phone,
-      `*Paiement Wave*
-
-Montant : ${formatAmountFCFA(amount)}
-Numero : ${phone}
-
-Une demande de paiement Wave a ete envoyee a votre telephone.
-
-1. Ouvrez votre application Wave
-2. Verifiez la demande de paiement
-3. Entrez votre code PIN pour confirmer
-
-Vous recevrez une confirmation une fois le paiement effectue.`
+      `*Paiement Wave*\n\nMontant : ${formatAmountFCFA(amount)}\nNumero : ${phone}\n\nUne demande de paiement Wave a ete envoyee a votre telephone.\n\n1. Ouvrez votre application Wave\n2. Verifiez la demande de paiement\n3. Entrez votre code PIN pour confirmer\n\nVous recevrez une confirmation une fois le paiement effectue.`
     );
   }
 }
@@ -421,14 +371,7 @@ async function checkPaymentStatus(phone: string, session: ChatbotSession): Promi
     case 'completed':
       await sendMessage(
         phone,
-        `Paiement confirme!
-
-Montant : ${formatAmountFCFA(statusResult.amount)}
-Reference : ${statusResult.transactionId || paymentId.substring(0, 8)}
-
-Vous allez recevoir votre recu par SMS.
-
-Tapez 'menu' pour continuer.`
+        `Paiement confirme!\n\nMontant : ${formatAmountFCFA(statusResult.amount)}\nReference : ${statusResult.transactionId || paymentId.substring(0, 8)}\n\nVous allez recevoir votre recu par SMS.\n\nTapez 'menu' pour continuer.`
       );
 
       // Update tax liabilities as paid
@@ -439,11 +382,7 @@ Tapez 'menu' pour continuer.`
     case 'failed':
       await sendMessage(
         phone,
-        `Le paiement a echoue.
-
-Raison : ${statusResult.error?.message || 'Erreur inconnue'}
-
-Veuillez reessayer. Tapez 'menu' pour continuer.`
+        `Le paiement a echoue.\n\nRaison : ${statusResult.error?.message || 'Erreur inconnue'}\n\nVeuillez reessayer. Tapez 'menu' pour continuer.`
       );
       await updateSession(phone, { state: 'IDLE', data: {} });
       break;
@@ -451,28 +390,20 @@ Veuillez reessayer. Tapez 'menu' pour continuer.`
     case 'expired':
       await sendMessage(
         phone,
-        `La session de paiement a expire.
-
-Veuillez reinitier le paiement. Tapez 'menu' pour continuer.`
+        `La session de paiement a expire.\n\nVeuillez reinitier le paiement. Tapez 'menu' pour continuer.`
       );
       await updateSession(phone, { state: 'IDLE', data: {} });
       break;
 
     case 'cancelled':
-      await sendMessage(phone, `Le paiement a ete annule.
-
-Tapez 'menu' pour continuer.`);
+      await sendMessage(phone, `Le paiement a ete annule.\n\nTapez 'menu' pour continuer.`);
       await updateSession(phone, { state: 'IDLE', data: {} });
       break;
 
     default:
       await sendMessage(
         phone,
-        `Paiement en attente.
-
-Statut : ${statusResult.providerStatus || 'En cours'}
-
-Veuillez finaliser votre paiement via ${getProviderDisplayName(method)}.`
+        `Paiement en attente.\n\nStatut : ${statusResult.providerStatus || 'En cours'}\n\nVeuillez finaliser votre paiement via ${getProviderDisplayName(method)}.`
       );
       break;
   }
@@ -492,9 +423,7 @@ async function cancelPendingPayment(phone: string, session: ChatbotSession): Pro
 
   await sendMessage(
     phone,
-    `Paiement annule.
-
-Vous pouvez reinitier un paiement a tout moment. Tapez 'menu' pour continuer.`
+    `Paiement annule.\n\nVous pouvez reinitier un paiement a tout moment. Tapez 'menu' pour continuer.`
   );
 
   await updateSession(phone, { state: 'IDLE', data: {} });
@@ -559,13 +488,7 @@ export async function handlePaymentCompletionNotification(
   // Send confirmation message
   await sendMessage(
     phone,
-    `Paiement confirme!
-
-Votre paiement TPT a ete recu avec succes. Vous allez recevoir votre recu par SMS.
-
-Merci pour votre contribution au developpement du tourisme senegalais!
-
-Tapez 'menu' pour continuer.`
+    `Paiement confirme!\n\nVotre paiement TPT a ete recu avec succes. Vous allez recevoir votre recu par SMS.\n\nMerci pour votre contribution au developpement du tourisme senegalais!\n\nTapez 'menu' pour continuer.`
   );
 
   // Mark liabilities as paid

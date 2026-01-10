@@ -101,11 +101,11 @@ async function handlePropertyType(
 
   await sendMessage(
     phone,
-    "Parfait ! 📍
+    `Parfait ! 📍
 
 Quelle est l'adresse complète de votre propriété ?
 
-(Ex: 12 Rue Félix Faure, Plateau, Dakar)"
+(Ex: 12 Rue Félix Faure, Plateau, Dakar)`
   );
 }
 
@@ -133,9 +133,9 @@ async function handlePropertyAddress(
 
   await sendMessage(
     phone,
-    '📍 Pour localiser précisément votre propriété, veuillez partager votre position GPS.
+    `📍 Pour localiser précisément votre propriété, veuillez partager votre position GPS.
 
-Appuyez sur le bouton "+" puis "Position" pour partager.'
+Appuyez sur le bouton "+" puis "Position" pour partager.`
   );
 
   await sendInteractiveButtons(phone, 'Localisation', [
@@ -174,9 +174,9 @@ async function handlePropertyLocation(
 
   await sendMessage(
     phone,
-    '📸 Envoyez maintenant des photos de votre propriété.
+    `📸 Envoyez maintenant des photos de votre propriété.
 
-Envoyez au moins 1 photo (extérieur ou intérieur), puis tapez "terminé" quand vous avez fini.'
+Envoyez au moins 1 photo (extérieur ou intérieur), puis tapez "terminé" quand vous avez fini.`
   );
 }
 
@@ -197,9 +197,7 @@ async function handlePropertyPhotos(
     if (photos.length < 5) {
       await sendMessage(
         phone,
-        `✅ Photo ${photos.length} reçue !
-
-Vous pouvez envoyer d'autres photos ou taper 'terminé'.`
+        `✅ Photo ${photos.length} reçue !\n\nVous pouvez envoyer d'autres photos ou taper 'terminé'.`
       );
     } else {
       await sendMessage(phone, '✅ 5 photos reçues. Passons à la confirmation.');
@@ -247,15 +245,7 @@ async function proceedToConfirmation(
 
   await sendMessage(
     phone,
-    `📋 Récapitulatif de votre propriété :
-
-🏷️ Nom : ${data.name}
-📁 Type : ${typeLabels[data.type]}
-📍 Adresse : ${data.address}
-🗺️ GPS : ${data.gps_lat ? 'Oui' : 'Non'}
-📸 Photos : ${data.photos.length}
-
-Confirmez-vous ces informations ?`
+    `📋 Récapitulatif de votre propriété :\n\n🏷️ Nom : ${data.name}\n📁 Type : ${typeLabels[data.type]}\n📍 Adresse : ${data.address}\n🗺️ GPS : ${data.gps_lat ? 'Oui' : 'Non'}\n📸 Photos : ${data.photos.length}\n\nConfirmez-vous ces informations ?`
   );
 
   await sendInteractiveButtons(phone, 'Confirmation', [
@@ -278,9 +268,7 @@ async function handlePropertyConfirm(
 
   if (reply === 'restart') {
     await updateSession(phone, { state: 'ADD_PROPERTY_NAME', data: {} });
-    await sendMessage(phone, "D'accord, recommençons.
-
-Quel est le nom de votre établissement ?");
+    await sendMessage(phone, `D'accord, recommençons.\n\nQuel est le nom de votre établissement ?`);
     return;
   }
 
@@ -334,13 +322,7 @@ Quel est le nom de votre établissement ?");
 
     await sendMessage(
       phone,
-      `🎉 Propriété enregistrée avec succès !
-
-📋 Votre demande est en cours de vérification.
-
-Une fois validée, vous recevrez votre numéro de licence Gestoo.
-
-Tapez 'menu' pour continuer.`
+      `🎉 Propriété enregistrée avec succès !\n\n📋 Votre demande est en cours de vérification.\n\nUne fois validée, vous recevrez votre numéro de licence Gestoo.\n\nTapez 'menu' pour continuer.`
     );
   }
 }
