@@ -258,18 +258,18 @@ async function checkOpenSanctions(
       return result;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { results?: Array<Record<string, unknown>> };
     result.checked = true;
 
     // Process results
     if (data.results && Array.isArray(data.results)) {
-      result.matches = data.results.map((r: any) => ({
-        id: r.id,
-        name: r.caption || r.name,
-        score: r.score || 0,
-        schema: r.schema,
-        datasets: r.datasets || [],
-        countries: r.properties?.country || [],
+      result.matches = data.results.map((r) => ({
+        id: r.id as string,
+        name: (r.caption || r.name) as string,
+        score: (r.score as number) || 0,
+        schema: r.schema as string,
+        datasets: (r.datasets as string[]) || [],
+        countries: ((r.properties as Record<string, unknown>)?.country as string[]) || [],
       }));
 
       if (result.matches.length > 0) {
