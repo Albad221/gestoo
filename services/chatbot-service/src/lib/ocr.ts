@@ -14,7 +14,7 @@ export interface ExtractedDocument {
   dateOfBirth: string;
   nationality: string;
   documentNumber: string;
-  cniNumber: string;
+  nin: string; // National Identification Number (NIN) - the important one
   gender: 'M' | 'F' | '';
   placeOfBirth: string;
   confidence: number;
@@ -49,7 +49,7 @@ export async function extractDocumentInfo(imageBuffer: Buffer): Promise<Extracte
             content: [
               {
                 type: 'text',
-                text: `Tu es un système expert d'OCR pour documents d'identité sénégalais et passeports.
+                text: `Tu es un système expert d'OCR pour documents d'identité sénégalais (CEDEAO) et passeports.
 
 Extrait TOUTES les informations de ce document d'identité.
 
@@ -60,15 +60,18 @@ Retourne un objet JSON avec EXACTEMENT ces champs (utilise une chaîne vide si n
   "firstName": "PRÉNOMS exactement comme écrits",
   "dateOfBirth": "format YYYY-MM-DD",
   "nationality": "Pays",
-  "documentNumber": "Numéro du document (passeport ou CNI)",
+  "documentNumber": "Numéro physique de la carte",
+  "nin": "Numéro d'Identification Nationale (NIN) - TRÈS IMPORTANT",
   "gender": "M" ou "F",
   "placeOfBirth": "Lieu de naissance"
 }
 
-IMPORTANT pour les CNI sénégalaises:
-- Le numéro CNI est généralement au format: 1 XXX XXXX XXXXX (13 chiffres)
-- Cherche "N°" ou "Numéro" suivi de chiffres
-- Le nom complet peut être sur une ou plusieurs lignes
+IMPORTANT pour les CNI sénégalaises (carte CEDEAO biométrique):
+- Le NIN (Numéro d'Identification Nationale) est le numéro le plus important
+- Format NIN: généralement un long numéro comme "1 234 1990 12345" ou similaire
+- Le NIN est différent du numéro de la carte physique
+- Cherche "NIN" ou "N° Identification" sur la carte
+- Sur les nouvelles cartes CEDEAO, le NIN est souvent au dos ou près de la photo
 
 Retourne UNIQUEMENT du JSON valide, pas de markdown ni d'explication.`
               },
@@ -112,7 +115,7 @@ Retourne UNIQUEMENT du JSON valide, pas de markdown ni d'explication.`
       dateOfBirth: parsed.dateOfBirth || '',
       nationality: parsed.nationality || '',
       documentNumber: parsed.documentNumber || '',
-      cniNumber: parsed.documentNumber || '',
+      nin: parsed.nin || parsed.NIN || '',
       gender: parsed.gender || '',
       placeOfBirth: parsed.placeOfBirth || '',
       confidence: calculateConfidence(parsed),
@@ -133,7 +136,7 @@ function calculateConfidence(data: Record<string, string>): number {
     'lastName',
     'firstName',
     'dateOfBirth',
-    'documentNumber',
+    'nin', // NIN is the most important field
     'gender',
   ];
 

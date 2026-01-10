@@ -11,6 +11,7 @@ import { sendMessage, sendInteractiveButtons, sendInteractiveList, downloadMedia
 import { supabase } from '../lib/supabase.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { extractDocumentInfo, type ExtractedDocument } from '../lib/ocr.js';
+import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKey } from '../lib/wave.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -39,16 +40,34 @@ Tu es chaleureuse, professionnelle et naturelle. Tu parles comme une vraie Seneg
 ## CONTEXTE
 {{USER_CONTEXT}}
 
-## TES MISSIONS
-1. **Inscription bailleurs**: Collecter nom + CNI, creer compte
-2. **Check-in locataires**: Scanner passeport/CNI, enregistrer sejour, calculer TPT (1000 FCFA/nuit/personne)
-3. **Paiement TPT**: Afficher solde, paiement Wave
-4. **Support**: Repondre aux questions
+## WORKFLOW COMPLET
+
+### 1. INSCRIPTION BAILLEUR
+- Collecter: nom complet + NIN (Numero d'Identification Nationale)
+- Le NIN est sur la carte CEDEAO biometrique (different du numero de carte)
+- Action: "create_landlord" avec data: { full_name, nin }
+
+### 2. HOMOLOGATION PROPRIETE (obligatoire avant de louer)
+- Le bailleur doit faire homologuer son bien AVANT de pouvoir enregistrer des locataires
+- Documents requis: titre de propriete ou bail, photos du bien
+- Action: "request_homologation" - la demande sera examinee par l'administration
+- Statut: en_attente -> approuve / rejete
+
+### 3. CHECK-IN LOCATAIRES (seulement si propriete homologuee)
+- Scanner passeport ou CNI du locataire
+- Enregistrer: nom, nationalite, dates sejour, nombre de personnes
+- Calculer TPT: 1000 FCFA/nuit/personne
+- Action: "create_guest" avec les infos du locataire
+
+### 4. PAIEMENT TPT via Wave
+- Afficher le solde TPT du
+- Generer un lien de paiement Wave
+- Action: "generate_payment" avec le montant
 
 ## FORMAT DE REPONSE (JSON)
 {
   "response": "Ton message naturel et chaleureux",
-  "action": null | "create_landlord" | "create_guest" | "show_balance" | "generate_payment",
+  "action": null | "create_landlord" | "request_homologation" | "create_guest" | "show_balance" | "generate_payment",
   "data": {},
   "language": "fr" | "wo"
 }
@@ -56,13 +75,14 @@ Tu es chaleureuse, professionnelle et naturelle. Tu parles comme une vraie Seneg
 ## IMPORTANT
 - Sois naturelle et conversationnelle, pas robotique
 - En Wolof, parle comme on parle vraiment a Dakar
-- Extrais les infos (nom, CNI) quand l'utilisateur les donne
-- NE DIS JAMAIS que tu as cree un compte si tu n'as pas le nom ET le numero CNI
-- Si tu recois une photo mais pas de numero CNI lisible, DEMANDE a l'utilisateur de taper son numero CNI
-- Utilise "create_landlord" UNIQUEMENT quand tu as: full_name ET cni_number dans data
+- Extrais le NIN (pas le numero de carte) quand l'utilisateur envoie sa CNI
+- NE DIS JAMAIS que tu as cree un compte si tu n'as pas le nom ET le NIN
+- Si tu recois une photo mais pas de NIN lisible, DEMANDE a l'utilisateur de taper son NIN
+- Utilise "create_landlord" UNIQUEMENT quand tu as: full_name ET nin dans data
+- Un bailleur DOIT homologuer son bien avant de pouvoir enregistrer des locataires
 
 ## REGLE ABSOLUE
-Ne mens jamais. Si tu n'as pas reussi a extraire le CNI d'une photo, dis-le et demande a l'utilisateur de le taper.
+Ne mens jamais. Si tu n'as pas reussi a extraire le NIN d'une photo, dis-le et demande a l'utilisateur de le taper.
 
 Reponds maintenant:`;
 
@@ -133,7 +153,7 @@ Informations extraites:
 - Type: ${extractedDoc.documentType}
 - Nom: ${extractedDoc.lastName}
 - Prénom: ${extractedDoc.firstName}
-- Numéro CNI: ${extractedDoc.cniNumber}
+- NIN: ${extractedDoc.nin}
 - Date de naissance: ${extractedDoc.dateOfBirth}
 - Nationalité: ${extractedDoc.nationality}`;
       } else {
@@ -185,7 +205,7 @@ Informations extraites:
       // Store extracted doc info for later use
       ...(extractedDoc && extractedDoc.confidence > 50 ? {
         extracted_full_name: extractedDoc.fullName,
-        extracted_cni_number: extractedDoc.cniNumber,
+        extracted_nin: extractedDoc.nin,
         extracted_doc_type: extractedDoc.documentType,
       } : {}),
       history: trimmedHistory,
@@ -250,12 +270,12 @@ async function callGemini(
 - Nom complet: ${extractedDoc.fullName}
 - Prénom: ${extractedDoc.firstName}
 - Nom: ${extractedDoc.lastName}
-- Numéro CNI: ${extractedDoc.cniNumber}
+- NIN (Numéro d'Identification Nationale): ${extractedDoc.nin}
 - Date de naissance: ${extractedDoc.dateOfBirth}
 - Nationalité: ${extractedDoc.nationality}
 - Genre: ${extractedDoc.gender}
 
-IMPORTANT: Ces informations ont été extraites automatiquement. Utilise-les pour créer le compte si l'utilisateur confirme.`;
+IMPORTANT: Ces informations ont été extraites automatiquement. Utilise le NIN (pas le numéro de carte) pour créer le compte si l'utilisateur confirme.`;
     }
 
     const prompt = SYSTEM_PROMPT.replace('{{USER_CONTEXT}}', contextWithDoc);
@@ -315,30 +335,30 @@ async function executeAction(
   switch (aiResponse.action) {
     case 'create_landlord': {
       // Try to get data from AI response, fallback to session extracted data
-      const aiData = aiResponse.data as { full_name?: string; cni_number?: string };
+      const aiData = aiResponse.data as { full_name?: string; nin?: string; cni_number?: string };
       const sessionData = session.data as {
         extracted_full_name?: string;
-        extracted_cni_number?: string;
+        extracted_nin?: string;
         full_name?: string;
-        cni_number?: string;
+        nin?: string;
       };
 
       const full_name = aiData.full_name || sessionData.extracted_full_name || sessionData.full_name;
-      const cni_number = aiData.cni_number || sessionData.extracted_cni_number || sessionData.cni_number;
+      const nin = aiData.nin || aiData.cni_number || sessionData.extracted_nin || sessionData.nin;
 
-      if (!full_name || !cni_number) {
-        console.error('[AI] Missing data for create_landlord:', { full_name, cni_number });
+      if (!full_name || !nin) {
+        console.error('[AI] Missing data for create_landlord:', { full_name, nin });
         return {};
       }
 
-      console.log('[AI] Creating landlord with:', { full_name, cni_number });
+      console.log('[AI] Creating landlord with:', { full_name, nin });
 
       const { data: landlord, error } = await supabase
         .from('landlords')
         .insert({
           full_name,
           phone,
-          cni_number,
+          cni_number: nin, // Store NIN in cni_number field
         })
         .select()
         .single();
@@ -365,9 +385,52 @@ async function executeAction(
     }
 
     case 'generate_payment': {
-      // TODO: Generate Wave payment link
-      console.log('[AI] generate_payment not yet implemented');
-      return {};
+      const { amount } = aiResponse.data as { amount?: number };
+
+      if (!amount || amount <= 0) {
+        console.error('[AI] Invalid amount for payment:', amount);
+        return {};
+      }
+
+      if (!session.landlord_id) {
+        console.error('[AI] No landlord_id for payment');
+        return {};
+      }
+
+      console.log(`[AI] Generating Wave payment for ${amount} XOF`);
+
+      try {
+        const waveClient = getWaveClient();
+        const baseUrl = process.env.APP_BASE_URL || 'https://gestoo.sn';
+
+        const checkoutSession = await waveClient.createCheckoutSession(
+          {
+            amount: formatWaveAmount(amount, 'XOF'),
+            currency: 'XOF',
+            success_url: `${baseUrl}/payment/success`,
+            error_url: `${baseUrl}/payment/error`,
+            client_reference: `tpt-${session.landlord_id}-${Date.now()}`,
+            restrict_payer_mobile: formatWavePhone(phone),
+          },
+          generateIdempotencyKey('tpt')
+        );
+
+        // Format amount for display
+        const formattedAmount = new Intl.NumberFormat('fr-SN').format(amount) + ' FCFA';
+
+        // Send payment link to user
+        await sendMessage(
+          phone,
+          `💰 Paiement TPT: ${formattedAmount}\n\n` +
+          `Cliquez sur ce lien pour payer via Wave:\n${checkoutSession.wave_launch_url}\n\n` +
+          `⏱️ Ce lien expire dans 30 minutes.`
+        );
+
+        return {};
+      } catch (error) {
+        console.error('[AI] Failed to create Wave checkout:', error);
+        return {};
+      }
     }
 
     default:
