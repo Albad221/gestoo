@@ -22,9 +22,17 @@ export async function webhookHandler(req: Request, res: Response) {
       return;
     }
 
-    // Skip status updates
-    if (payload.statusString && payload.statusString !== 'RECEIVED') {
-      console.log('[WEBHOOK] Skipping status update:', payload.statusString);
+    // Only process actual message events, not status updates
+    // WATI sends eventType: "message" for incoming messages
+    // statusString can be "SENT", "DELIVERED", "READ" for status updates on OUR messages
+    if (payload.eventType !== 'message') {
+      console.log('[WEBHOOK] Skipping non-message event:', payload.eventType);
+      return;
+    }
+
+    // Skip if no text content and no media
+    if (!payload.text && !payload.data && payload.type === 'text') {
+      console.log('[WEBHOOK] Skipping empty message');
       return;
     }
 
