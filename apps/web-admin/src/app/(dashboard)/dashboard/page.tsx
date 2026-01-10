@@ -310,14 +310,14 @@ export default function AdminDashboardPage() {
             <h3 className="text-gray-900 dark:text-white text-lg font-bold mb-4">Actions Rapides</h3>
             <div className="grid grid-cols-2 gap-4 flex-1">
               <Link
-                href="/guests"
+                href="/travelers"
                 className="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 dark:hover:bg-gray-700 hover:shadow-md transition-all group h-full"
               >
                 <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                   <span className="material-symbols-outlined">person_search</span>
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white text-center">
-                  Rechercher voyageur
+                  Voyageurs
                 </span>
               </Link>
 
@@ -329,7 +329,7 @@ export default function AdminDashboardPage() {
                   <span className="material-symbols-outlined">assignment_late</span>
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white text-center">
-                  Voir alertes
+                  Alertes
                 </span>
               </Link>
 
@@ -338,22 +338,22 @@ export default function AdminDashboardPage() {
                 className="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 dark:hover:bg-gray-700 hover:shadow-md transition-all group h-full"
               >
                 <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined">verified</span>
+                  <span className="material-symbols-outlined">domain</span>
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white text-center">
-                  Vérifier propriété
+                  Propriétés
                 </span>
               </Link>
 
               <Link
-                href="/statistics"
+                href="/intelligence"
                 className="flex flex-col items-center justify-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 dark:hover:bg-gray-700 hover:shadow-md transition-all group h-full"
               >
                 <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined">analytics</span>
+                  <span className="material-symbols-outlined">insights</span>
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white text-center">
-                  Statistiques
+                  Intelligence
                 </span>
               </Link>
             </div>
@@ -367,7 +367,7 @@ export default function AdminDashboardPage() {
               <span className="material-symbols-outlined text-primary">history</span>
               <h3 className="text-gray-900 dark:text-white text-lg font-bold">Arrivées récentes</h3>
             </div>
-            <Link href="/guests" className="text-primary text-sm font-medium hover:underline">
+            <Link href="/travelers" className="text-primary text-sm font-medium hover:underline">
               Voir tout
             </Link>
           </div>

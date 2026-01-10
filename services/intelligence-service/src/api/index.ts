@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { createAnalyticsRouter } from './analytics-routes';
 import { createRiskRouter } from './risk-routes';
 import { createReportsRouter } from './reports-routes';
+import { createEnrichmentRouter } from './enrichment-routes';
 
 export function createApiRouter(supabase: SupabaseClient): Router {
   const router = Router();
@@ -11,6 +12,7 @@ export function createApiRouter(supabase: SupabaseClient): Router {
   router.use('/analytics', createAnalyticsRouter(supabase));
   router.use('/risk', createRiskRouter(supabase));
   router.use('/reports', createReportsRouter(supabase));
+  router.use('/intelligence', createEnrichmentRouter(supabase));
 
   // Health check endpoint
   router.get('/health', (req, res) => {
@@ -55,6 +57,17 @@ export function createApiRouter(supabase: SupabaseClient): Router {
           '/reports/enforcement/targets': 'GET - Priority targets',
           '/reports/history': 'GET - Report history',
         },
+        intelligence: {
+          '/intelligence/enrich': 'POST - Enrich person data from phone, email, or name',
+          '/intelligence/verify': 'POST - Verify person against sanctions and watchlists',
+          '/intelligence/phone-lookup': 'POST - Direct phone number lookup',
+          '/intelligence/email-lookup': 'POST - Direct email lookup and enrichment',
+          '/intelligence/sanctions-check': 'POST - Check name against sanctions databases',
+          '/intelligence/watchlist-check': 'POST - Check name against law enforcement watchlists',
+          '/intelligence/pep-check': 'POST - Check if person is Politically Exposed Person',
+          '/intelligence/interpol/:entityId': 'GET - Get INTERPOL notice details',
+          '/intelligence/batch-verify': 'POST - Batch verify multiple persons',
+        },
       },
     });
   });
@@ -65,3 +78,4 @@ export function createApiRouter(supabase: SupabaseClient): Router {
 export { createAnalyticsRouter } from './analytics-routes';
 export { createRiskRouter } from './risk-routes';
 export { createReportsRouter } from './reports-routes';
+export { createEnrichmentRouter } from './enrichment-routes';

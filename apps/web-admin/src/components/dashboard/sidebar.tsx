@@ -27,27 +27,16 @@ const navSections: NavSection[] = [
       },
       {
         href: '/properties',
-        label: 'Hébergements',
-        icon: 'home',
+        label: 'Propriétés',
+        icon: 'domain',
         roles: ['ministry', 'admin'],
       },
       {
-        href: '/etablissements',
-        label: 'Hôtels & Auberges',
-        icon: 'apartment',
-        roles: ['ministry', 'admin'],
-      },
-      {
-        href: '/guests',
+        href: '/travelers',
         label: 'Voyageurs',
         icon: 'group',
         roles: ['police', 'admin'],
       },
-    ],
-  },
-  {
-    title: 'Sécurité',
-    items: [
       {
         href: '/alerts',
         label: 'Alertes',
@@ -55,50 +44,22 @@ const navSections: NavSection[] = [
         roles: ['police', 'admin'],
         badge: 3,
       },
+    ],
+  },
+  {
+    title: 'Intelligence',
+    items: [
       {
-        href: '/map',
-        label: 'Carte',
-        icon: 'map',
+        href: '/intelligence',
+        label: 'Intelligence Marché',
+        icon: 'insights',
+        roles: ['ministry', 'tax_authority', 'admin'],
       },
       {
         href: '/reports',
         label: 'Rapports',
         icon: 'description',
         roles: ['ministry', 'admin'],
-      },
-    ],
-  },
-  {
-    title: 'OSINT',
-    items: [
-      {
-        href: '/osint-verify-traveler',
-        label: 'Vérifier Voyageur',
-        icon: 'verified_user',
-        roles: ['police', 'admin'],
-      },
-      {
-        href: '/osint-profile',
-        label: 'Profil Complet',
-        icon: 'person_search',
-        roles: ['police', 'admin'],
-      },
-    ],
-  },
-  {
-    title: 'Finances',
-    items: [
-      {
-        href: '/revenue',
-        label: 'Recettes TPT',
-        icon: 'payments',
-        roles: ['tax_authority', 'ministry', 'admin'],
-      },
-      {
-        href: '/intelligence',
-        label: 'Intelligence Marché',
-        icon: 'insights',
-        roles: ['ministry', 'tax_authority', 'admin'],
       },
     ],
   },

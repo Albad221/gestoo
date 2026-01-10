@@ -1,7 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
+
+// Dynamic import for map (SSR disabled)
+const HotelsMap = dynamic(() => import('@/components/map/hotels-map'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+    </div>
+  ),
+});
 
 interface Property {
   id: string;
@@ -28,6 +39,14 @@ interface Property {
   // Rejection fields
   rejection_reason: string | null;
   rejected_at: string | null;
+  // Source tracking
+  source: 'registered' | 'scraped';
+  // Scraped-specific fields
+  rating?: number | null;
+  num_reviews?: number | null;
+  url?: string;
+  phone?: string | null;
+  website?: string | null;
   landlords: {
     first_name: string;
     last_name: string;
@@ -57,6 +76,7 @@ export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active' | 'suspended' | 'rejected'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'registered' | 'scraped'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -64,40 +84,118 @@ export default function PropertiesPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [customReason, setCustomReason] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map' | 'split'>('list');
+  const [stats, setStats] = useState({ registered: 0, scraped: 0, withPhone: 0, cities: 0 });
 
   useEffect(() => {
     fetchProperties();
-  }, [statusFilter, typeFilter]);
+  }, [statusFilter, typeFilter, sourceFilter]);
 
   const fetchProperties = async () => {
     setLoading(true);
     const supabase = createClient();
 
-    let query = supabase
-      .from('properties')
-      .select(`
-        *,
-        landlords (
-          first_name,
-          last_name,
-          phone,
-          email,
-          national_id
-        )
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      // Fetch registered properties
+      let registeredQuery = supabase
+        .from('properties')
+        .select(`
+          *,
+          landlords (
+            first_name,
+            last_name,
+            phone,
+            email,
+            national_id
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter);
+      if (statusFilter !== 'all') {
+        registeredQuery = registeredQuery.eq('status', statusFilter);
+      }
+
+      if (typeFilter !== 'all') {
+        registeredQuery = registeredQuery.eq('type', typeFilter);
+      }
+
+      // Fetch scraped listings
+      const scrapedQuery = supabase
+        .from('scraped_listings')
+        .select('id, title, city, address, latitude, longitude, rating, num_reviews, url, photos, raw_data, created_at, last_seen_at')
+        .eq('platform', 'google_places')
+        .order('created_at', { ascending: false });
+
+      const [registeredResult, scrapedResult] = await Promise.all([
+        sourceFilter !== 'scraped' ? registeredQuery.limit(100) : Promise.resolve({ data: [] }),
+        sourceFilter !== 'registered' ? scrapedQuery.limit(100) : Promise.resolve({ data: [] }),
+      ]);
+
+      // Transform registered properties
+      const registeredProperties: Property[] = ((registeredResult.data || []) as any[]).map((p) => ({
+        ...p,
+        source: 'registered' as const,
+      }));
+
+      // Transform scraped listings to match Property interface
+      const scrapedProperties: Property[] = ((scrapedResult.data || []) as any[]).map((h) => ({
+        id: h.id,
+        name: h.title,
+        type: h.raw_data?.property_type || 'hotel',
+        address: h.address || h.raw_data?.formatted_address || '',
+        city: h.city || '',
+        region: '',
+        status: 'active',
+        registration_number: null,
+        created_at: h.created_at,
+        num_rooms: null,
+        num_beds: null,
+        star_rating: null,
+        ninea: null,
+        tax_id: null,
+        has_fire_certificate: false,
+        has_health_certificate: false,
+        has_insurance: false,
+        photos_url: h.photos || [],
+        latitude: h.latitude,
+        longitude: h.longitude,
+        rejection_reason: null,
+        rejected_at: null,
+        source: 'scraped' as const,
+        rating: h.rating,
+        num_reviews: h.num_reviews,
+        url: h.url,
+        phone: h.raw_data?.phone || null,
+        website: h.raw_data?.website || null,
+        landlords: null,
+      }));
+
+      // Combine and filter based on source
+      let allProperties: Property[] = [];
+      if (sourceFilter === 'all') {
+        allProperties = [...registeredProperties, ...scrapedProperties];
+      } else if (sourceFilter === 'registered') {
+        allProperties = registeredProperties;
+      } else {
+        allProperties = scrapedProperties;
+      }
+
+      setProperties(allProperties);
+
+      // Calculate stats
+      const uniqueCities = new Set(allProperties.map(p => p.city).filter(Boolean));
+      const withPhone = allProperties.filter(p => p.phone || p.landlords?.phone).length;
+      setStats({
+        registered: registeredProperties.length,
+        scraped: scrapedProperties.length,
+        withPhone,
+        cities: uniqueCities.size,
+      });
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoading(false);
     }
-
-    if (typeFilter !== 'all') {
-      query = query.eq('type', typeFilter);
-    }
-
-    const { data } = await query.limit(100);
-    setProperties((data as Property[]) || []);
-    setLoading(false);
   };
 
   const handleApprove = async (propertyId: string) => {
@@ -237,6 +335,72 @@ export default function PropertiesPage() {
         )}
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <button
+          onClick={() => setSourceFilter('registered')}
+          className={`rounded-xl border p-4 text-left transition-all hover:shadow-md ${
+            sourceFilter === 'registered' ? 'ring-2 ring-primary border-primary' : 'border-gray-200 dark:border-gray-700'
+          } bg-white dark:bg-gray-800`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
+              <span className="material-symbols-outlined text-green-600 dark:text-green-400">verified</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Enregistrées</p>
+              <p className="text-xl font-bold text-green-600 dark:text-green-400">{stats.registered}</p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => setSourceFilter('scraped')}
+          className={`rounded-xl border p-4 text-left transition-all hover:shadow-md ${
+            sourceFilter === 'scraped' ? 'ring-2 ring-primary border-primary' : 'border-gray-200 dark:border-gray-700'
+          } bg-white dark:bg-gray-800`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+              <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">travel_explore</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Découvertes</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.scraped}</p>
+            </div>
+          </div>
+        </button>
+
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+              <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">location_city</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Villes</p>
+              <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{stats.cities}</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setSourceFilter('all')}
+          className={`rounded-xl border p-4 text-left transition-all hover:shadow-md ${
+            sourceFilter === 'all' ? 'ring-2 ring-primary border-primary' : 'border-gray-200 dark:border-gray-700'
+          } bg-white dark:bg-gray-800`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700">
+              <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">domain</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.registered + stats.scraped}</p>
+            </div>
+          </div>
+        </button>
+      </div>
+
       {/* Filters Row */}
       <div className="flex flex-wrap gap-4 items-center">
         {/* Search */}
@@ -268,6 +432,43 @@ export default function PropertiesPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-white dark:bg-gray-800">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              viewMode === 'list'
+                ? 'bg-primary text-white'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">list</span>
+            Liste
+          </button>
+          <button
+            onClick={() => setViewMode('map')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              viewMode === 'map'
+                ? 'bg-primary text-white'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">map</span>
+            Carte
+          </button>
+          <button
+            onClick={() => setViewMode('split')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              viewMode === 'split'
+                ? 'bg-primary text-white'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">vertical_split</span>
+            Mixte
+          </button>
         </div>
       </div>
 
@@ -316,31 +517,52 @@ export default function PropertiesPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-lg ${
+                          property.source === 'scraped' ? 'bg-blue-100 dark:bg-blue-900/30' :
                           property.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
                           property.status === 'active' ? 'bg-green-100 dark:bg-green-900/30' :
                           'bg-gray-100 dark:bg-gray-700'
                         }`}>
                           <span className={`material-symbols-outlined text-[20px] ${
+                            property.source === 'scraped' ? 'text-blue-600 dark:text-blue-400' :
                             property.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
                             property.status === 'active' ? 'text-green-600 dark:text-green-400' :
                             'text-gray-600 dark:text-gray-400'
                           }`}>
-                            {typeConfig[property.type]?.icon || 'home'}
+                            {property.source === 'scraped' ? 'travel_explore' : (typeConfig[property.type]?.icon || 'home')}
                           </span>
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-medium text-gray-900 dark:text-white">{property.name}</p>
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusConfig[property.status]?.className}`}>
-                              {statusConfig[property.status]?.label}
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              property.source === 'scraped'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                : statusConfig[property.status]?.className
+                            }`}>
+                              {property.source === 'scraped' ? 'Découverte' : statusConfig[property.status]?.label}
                             </span>
+                            {property.source === 'registered' && property.registration_number && (
+                              <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                Enregistrée
+                              </span>
+                            )}
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {typeConfig[property.type]?.label || property.type} - {property.city}
                           </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            {property.landlords ? `${property.landlords.first_name} ${property.landlords.last_name}` : 'N/A'}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {property.source === 'scraped' && property.rating && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px] text-yellow-500">star</span>
+                                {property.rating.toFixed(1)} ({property.num_reviews} avis)
+                              </span>
+                            )}
+                            {property.source === 'registered' && property.landlords && (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                {property.landlords.first_name} {property.landlords.last_name}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -350,6 +572,12 @@ export default function PropertiesPage() {
                         {property.registration_number && (
                           <p className="text-xs font-mono text-green-600 dark:text-green-400 mt-1">
                             {property.registration_number}
+                          </p>
+                        )}
+                        {property.source === 'scraped' && !property.registration_number && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1 justify-end">
+                            <span className="material-symbols-outlined text-[12px]">warning</span>
+                            Non enregistrée
                           </p>
                         )}
                       </div>
@@ -397,8 +625,102 @@ export default function PropertiesPage() {
                   </p>
                 </div>
 
+                {/* Source Badge */}
+                <div className={`rounded-lg p-3 flex items-center gap-3 ${
+                  selectedProperty.source === 'scraped'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                    : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                }`}>
+                  <span className={`material-symbols-outlined text-[20px] ${
+                    selectedProperty.source === 'scraped'
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-green-600 dark:text-green-400'
+                  }`}>
+                    {selectedProperty.source === 'scraped' ? 'travel_explore' : 'verified'}
+                  </span>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      selectedProperty.source === 'scraped'
+                        ? 'text-blue-800 dark:text-blue-300'
+                        : 'text-green-800 dark:text-green-300'
+                    }`}>
+                      {selectedProperty.source === 'scraped' ? 'Propriété découverte' : 'Propriété enregistrée'}
+                    </p>
+                    <p className={`text-xs ${
+                      selectedProperty.source === 'scraped'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
+                      {selectedProperty.source === 'scraped'
+                        ? 'Trouvée via scraping - Non vérifiée officiellement'
+                        : 'Vérifiée et approuvée par le ministère'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Scraped Property Info */}
+                {selectedProperty.source === 'scraped' && (
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Informations découvertes</p>
+                    <div className="space-y-2">
+                      {selectedProperty.rating && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Note</span>
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[16px] text-yellow-500">star</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{selectedProperty.rating.toFixed(1)}</span>
+                            <span className="text-xs text-gray-500">({selectedProperty.num_reviews} avis)</span>
+                          </span>
+                        </div>
+                      )}
+                      {selectedProperty.phone && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Téléphone</span>
+                          <span className="text-sm font-mono text-gray-900 dark:text-white">{selectedProperty.phone}</span>
+                        </div>
+                      )}
+                      {selectedProperty.website && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Site web</span>
+                          <a
+                            href={selectedProperty.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline flex items-center gap-1"
+                          >
+                            Visiter <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                          </a>
+                        </div>
+                      )}
+                      {selectedProperty.url && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Source</span>
+                          <a
+                            href={selectedProperty.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline flex items-center gap-1"
+                          >
+                            Google Maps <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-[18px] mt-0.5">info</span>
+                        <p className="text-xs text-orange-700 dark:text-orange-300">
+                          Cette propriété a été trouvée automatiquement et n'est pas encore enregistrée officiellement.
+                          Contactez le propriétaire pour l'inviter à s'enregistrer.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Compliance Score */}
-                {selectedProperty.status === 'pending' && (
+                {selectedProperty.source === 'registered' && selectedProperty.status === 'pending' && (
                   <div className="rounded-lg bg-gray-50 dark:bg-gray-700 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
@@ -592,47 +914,75 @@ export default function PropertiesPage() {
 
                 {/* Action Buttons */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-                  {selectedProperty.status === 'pending' && (
+                  {selectedProperty.source === 'scraped' ? (
                     <>
+                      {selectedProperty.phone && (
+                        <a
+                          href={`tel:${selectedProperty.phone}`}
+                          className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-primary-dark flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">call</span>
+                          Appeler le propriétaire
+                        </a>
+                      )}
                       <button
-                        onClick={() => handleApprove(selectedProperty.id)}
-                        disabled={actionLoading}
-                        className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2"
                       >
-                        <span className="material-symbols-outlined text-[18px]">verified</span>
-                        {actionLoading ? 'Traitement...' : 'Approuver et générer licence'}
+                        <span className="material-symbols-outlined text-[18px]">mail</span>
+                        Envoyer invitation
                       </button>
                       <button
-                        onClick={() => setShowRejectModal(true)}
-                        disabled={actionLoading}
-                        className="w-full rounded-lg border border-red-300 dark:border-red-700 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2"
                       >
-                        <span className="material-symbols-outlined text-[18px]">block</span>
-                        Rejeter la demande
+                        <span className="material-symbols-outlined text-[18px]">flag</span>
+                        Signaler comme suspect
                       </button>
                     </>
-                  )}
+                  ) : (
+                    <>
+                      {selectedProperty.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(selectedProperty.id)}
+                            disabled={actionLoading}
+                            className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">verified</span>
+                            {actionLoading ? 'Traitement...' : 'Approuver et générer licence'}
+                          </button>
+                          <button
+                            onClick={() => setShowRejectModal(true)}
+                            disabled={actionLoading}
+                            className="w-full rounded-lg border border-red-300 dark:border-red-700 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">block</span>
+                            Rejeter la demande
+                          </button>
+                        </>
+                      )}
 
-                  {selectedProperty.status === 'active' && (
-                    <button
-                      onClick={() => handleSuspend(selectedProperty.id)}
-                      disabled={actionLoading}
-                      className="w-full rounded-lg border border-red-300 dark:border-red-700 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">pause_circle</span>
-                      Suspendre la propriété
-                    </button>
-                  )}
+                      {selectedProperty.status === 'active' && (
+                        <button
+                          onClick={() => handleSuspend(selectedProperty.id)}
+                          disabled={actionLoading}
+                          className="w-full rounded-lg border border-red-300 dark:border-red-700 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">pause_circle</span>
+                          Suspendre la propriété
+                        </button>
+                      )}
 
-                  {selectedProperty.status === 'suspended' && (
-                    <button
-                      onClick={() => handleApprove(selectedProperty.id)}
-                      disabled={actionLoading}
-                      className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">play_circle</span>
-                      Réactiver la propriété
-                    </button>
+                      {selectedProperty.status === 'suspended' && (
+                        <button
+                          onClick={() => handleApprove(selectedProperty.id)}
+                          disabled={actionLoading}
+                          className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                          Réactiver la propriété
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

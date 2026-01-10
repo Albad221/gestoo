@@ -3,6 +3,13 @@ import { updateSession } from '../lib/session.js';
 import { sendMessage, sendInteractiveButtons, downloadMedia } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
 import { extractDocumentData, isValidDocument, type DocumentType as OCRDocumentType } from '../lib/moondream.js';
+import {
+  verifyGuest,
+  storeVerificationResult,
+  createHighRiskAlert,
+  type VerificationResult,
+  type RiskLevel,
+} from '../lib/verification.js';
 
 interface GuestData {
   firstName?: string;
@@ -19,6 +26,9 @@ interface GuestData {
   propertyId?: string;
   nights?: number;
   numGuests?: number;
+  // Verification data
+  verificationResult?: VerificationResult;
+  isHighRisk?: boolean;
 }
 
 export async function handleGuestCheckin(
@@ -571,7 +581,7 @@ async function handleFinalConfirmation(
   const reply = message.interactive?.button_reply?.id;
 
   if (reply === 'cancel_checkin') {
-    await sendMessage(phone, `❌ Annule.
+    await sendMessage(phone, `Annule.
 
 Tapez 'menu' pour continuer.`);
     await updateSession(phone, { state: 'IDLE', data: {} });
@@ -580,16 +590,37 @@ Tapez 'menu' pour continuer.`);
 
   if (reply !== 'confirm_checkin') {
     await sendInteractiveButtons(phone, 'Confirmer?', [
-      { id: 'confirm_checkin', title: '✅ Confirmer' },
-      { id: 'cancel_checkin', title: '❌ Annuler' },
+      { id: 'confirm_checkin', title: 'Confirmer' },
+      { id: 'cancel_checkin', title: 'Annuler' },
     ]);
     return;
   }
 
-  await sendMessage(phone, "⏳ Enregistrement...");
+  await sendMessage(phone, "Enregistrement et verification en cours...");
 
   try {
-    // Create guest
+    // ==========================================================================
+    // STEP 1: Guest Verification
+    // ==========================================================================
+    console.log('[Check-in] Starting guest verification...');
+
+    const verificationResult = await verifyGuest({
+      firstName: guestData.firstName,
+      lastName: guestData.lastName,
+      nationality: guestData.nationality,
+      documentType: guestData.documentType,
+      documentNumber: guestData.documentNumber,
+      dateOfBirth: guestData.dateOfBirth,
+    });
+
+    guestData.verificationResult = verificationResult;
+    guestData.isHighRisk = verificationResult.riskLevel === 'HIGH';
+
+    console.log(`[Check-in] Verification complete: ${verificationResult.riskLevel} (${verificationResult.riskScore}/100)`);
+
+    // ==========================================================================
+    // STEP 2: Create Guest Record
+    // ==========================================================================
     const { data: guest, error: guestError } = await supabase
       .from('guests')
       .insert({
@@ -605,7 +636,9 @@ Tapez 'menu' pour continuer.`);
 
     if (guestError) throw guestError;
 
-    // Create stay
+    // ==========================================================================
+    // STEP 3: Create Stay Record (flagged if HIGH risk)
+    // ==========================================================================
     const { data: stay, error: stayError } = await supabase
       .from('stays')
       .insert({
@@ -619,13 +652,19 @@ Tapez 'menu' pour continuer.`);
         guardian_name: guestData.guardianName,
         guardian_phone: guestData.guardianPhone,
         guardian_relationship: guestData.guardianRelationship,
+        // Flag the stay if HIGH risk
+        notes: guestData.isHighRisk
+          ? `ALERTE RISQUE ELEVE - Score: ${verificationResult.riskScore}/100. Raisons: ${verificationResult.reasons.join('; ')}`
+          : undefined,
       })
       .select()
       .single();
 
     if (stayError) throw stayError;
 
-    // Create tax liability
+    // ==========================================================================
+    // STEP 4: Create Tax Liability
+    // ==========================================================================
     const tpt = 1000 * guestData.nights! * guestData.numGuests!;
 
     const { data: property } = await supabase
@@ -645,34 +684,88 @@ Tapez 'menu' pour continuer.`);
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     });
 
+    // ==========================================================================
+    // STEP 5: Store Verification Result
+    // ==========================================================================
+    await storeVerificationResult(
+      guest.id,
+      stay.id,
+      guestData.propertyId!,
+      verificationResult
+    );
+
+    // ==========================================================================
+    // STEP 6: Handle Alerts (Minor + High Risk)
+    // ==========================================================================
+
     // Minor alert
     if (guestData.isMinor) {
       await supabase.from('alerts').insert({
         type: 'minor_protection',
         severity: guestData.guardianName ? 'low' : 'high',
+        title: 'Client mineur',
         property_id: guestData.propertyId,
         stay_id: stay.id,
         guest_id: guest.id,
         description: `Mineur: ${guestData.firstName} ${guestData.lastName} (${guestData.age} ans). Accompagnateur: ${guestData.guardianName || 'NON DECLARE'}`,
-        status: 'open',
+        status: 'new',
+        auto_generated: true,
       });
     }
 
-    await sendMessage(
-      phone,
-      `✅ Enregistre!
+    // HIGH RISK ALERT - Create alert and notify landlord
+    if (guestData.isHighRisk) {
+      console.log('[Check-in] Creating HIGH RISK alert for guest:', guest.id);
 
-👤 ${guestData.firstName} ${guestData.lastName}
-🌙 ${guestData.nights} nuit(s)
-💰 TPT: ${tpt.toLocaleString('fr-FR')} FCFA
+      await createHighRiskAlert(
+        guest.id,
+        stay.id,
+        guestData.propertyId!,
+        verificationResult
+      );
+    }
 
-Tapez 'menu' pour continuer.`
-    );
+    // ==========================================================================
+    // STEP 7: Send Confirmation Message to Landlord
+    // ==========================================================================
+    let confirmationMsg = `Enregistre!\n\n`;
+    confirmationMsg += `${guestData.firstName} ${guestData.lastName}\n`;
+    confirmationMsg += `${guestData.documentNumber}\n`;
+    confirmationMsg += `${guestData.nights} nuit(s)\n`;
+    confirmationMsg += `TPT: ${tpt.toLocaleString('fr-FR')} FCFA\n`;
+
+    // Add verification status
+    if (verificationResult.riskLevel === 'LOW') {
+      confirmationMsg += `\nVerification: OK`;
+    } else if (verificationResult.riskLevel === 'MEDIUM') {
+      confirmationMsg += `\nVerification: Attention recommandee`;
+      confirmationMsg += `\nScore de risque: ${verificationResult.riskScore}/100`;
+    }
+
+    await sendMessage(phone, confirmationMsg);
+
+    // Send HIGH RISK WARNING separately for emphasis
+    if (guestData.isHighRisk) {
+      const warningMsg = `ALERTE SECURITE - CLIENT A HAUT RISQUE
+
+Score de risque: ${verificationResult.riskScore}/100
+
+Raisons:
+${verificationResult.reasons.map((r) => `- ${r}`).join('\n')}
+
+Le sejour a ete enregistre mais signale aux autorites.
+
+Soyez vigilant et contactez les autorites en cas de comportement suspect.`;
+
+      await sendMessage(phone, warningMsg);
+    }
+
+    await sendMessage(phone, "Tapez 'menu' pour continuer.");
 
     await updateSession(phone, { state: 'IDLE', data: {} });
   } catch (error) {
     console.error('Check-in error:', error);
-    await sendMessage(phone, "❌ Erreur. Reessayez ou contactez le support.");
+    await sendMessage(phone, "Erreur. Reessayez ou contactez le support.");
     await updateSession(phone, { state: 'IDLE', data: {} });
   }
 }
