@@ -17,7 +17,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GOOGLE_PLACES_API_KEY || '';
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-const MODEL_NAME = 'gemini-2.0-flash';
+// Gemini 3 Flash - meilleur Wolof et multimodal
+const MODEL_NAME = 'gemini-3-flash-preview';
 
 // =============================================================================
 // SYSTEM PROMPT
