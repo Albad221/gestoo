@@ -123,7 +123,7 @@ export async function handleWithAI(
 
     // Handle reset command
     if (userMessage.toLowerCase().trim() === 'reset' || userMessage.toLowerCase().trim() === '/reset') {
-      await updateSession(phone, { state: 'IDLE', landlord_id: null, data: {} });
+      await updateSession(phone, { state: 'IDLE', landlord_id: undefined, data: {} });
       await sendMessage(phone, '🔄 Session réinitialisée. Envoyez un message pour recommencer.');
       return;
     }
