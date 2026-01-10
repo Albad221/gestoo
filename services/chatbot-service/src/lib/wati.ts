@@ -1224,7 +1224,7 @@ export function parseWatiWebhook(payload: WatiWebhookPayload): ParsedMessage {
         // Check if data is already a full URL (WATI sends direct URLs)
         const isDataUrl = payload.data?.startsWith('http');
 
-        if (isDataUrl) {
+        if (isDataUrl && payload.data) {
           // data IS the URL - use it directly
           result.image = {
             id: payload.data,
