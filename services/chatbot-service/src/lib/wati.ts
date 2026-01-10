@@ -900,6 +900,35 @@ export function getMediaUrl(fileName: string): string {
   return `${WATI_API_URL}/api/v1/getMedia?fileName=${encodeURIComponent(fileName)}`;
 }
 
+/**
+ * Download media from a direct URL
+ *
+ * @param url - Direct URL to the media file
+ * @returns Buffer containing the media data
+ */
+export async function downloadMediaFromUrl(url: string): Promise<Buffer> {
+  console.log('[WATI] Downloading media from URL:', url);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${WATI_API_TOKEN}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new WatiApiError(
+      `Failed to download media: ${response.status}`,
+      response.status,
+      { message: await response.text() },
+      false
+    );
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
 // =============================================================================
 // CONTACT MANAGEMENT
 // =============================================================================
@@ -1488,6 +1517,7 @@ export default {
 
   // Media handling
   downloadMedia,
+  downloadMediaFromUrl,
   getMediaUrl,
 
   // Contact management

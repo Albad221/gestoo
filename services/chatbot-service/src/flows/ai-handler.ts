@@ -7,9 +7,10 @@
 
 import type { WhatsAppMessage, ChatbotSession } from '@gestoo/types';
 import { updateSession } from '../lib/session.js';
-import { sendMessage, sendInteractiveButtons, sendInteractiveList, downloadMedia } from '../lib/wati.js';
+import { sendMessage, sendInteractiveButtons, sendInteractiveList, downloadMediaFromUrl } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { extractDocumentInfo, type ExtractedDocument } from '../lib/ocr.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -95,6 +96,7 @@ export async function handleWithAI(
   // Extract message content
   let userMessage = '';
   let imageBuffer: Buffer | null = null;
+  let extractedDoc: ExtractedDocument | null = null;
 
   if (message.type === 'text' && message.text?.body) {
     userMessage = message.text.body;
@@ -106,9 +108,38 @@ export async function handleWithAI(
   } else if (message.type === 'image' && message.image?.id) {
     userMessage = '[Photo de document envoyée]';
     try {
-      imageBuffer = await downloadMedia(message.image.id);
+      // WATI adds a URL field to the image object (not in base types)
+      const imageWithUrl = message.image as { id: string; url?: string; mimeType?: string };
+      const imageUrl = imageWithUrl.url;
+      if (imageUrl) {
+        console.log('[AI] Downloading image from URL:', imageUrl);
+        imageBuffer = await downloadMediaFromUrl(imageUrl);
+      } else {
+        console.log('[AI] No image URL available, skipping download');
+      }
+      // Use GPT-4 Vision for OCR if we have the image
+      if (imageBuffer) {
+        console.log('[AI] Image downloaded, running OCR with GPT-4 Vision...');
+        extractedDoc = await extractDocumentInfo(imageBuffer);
+      }
+
+      if (extractedDoc && extractedDoc.confidence > 50) {
+        console.log('[AI] OCR successful:', extractedDoc);
+        userMessage = `[Photo de document envoyée - OCR réussi]
+Informations extraites:
+- Type: ${extractedDoc.documentType}
+- Nom: ${extractedDoc.lastName}
+- Prénom: ${extractedDoc.firstName}
+- Numéro CNI: ${extractedDoc.cniNumber}
+- Date de naissance: ${extractedDoc.dateOfBirth}
+- Nationalité: ${extractedDoc.nationality}`;
+      } else {
+        console.log('[AI] OCR failed or low confidence');
+        userMessage = '[Photo de document envoyée - OCR échoué, impossible de lire le document]';
+      }
     } catch (e) {
-      console.error('[AI] Failed to download image:', e);
+      console.error('[AI] Failed to download/process image:', e);
+      userMessage = '[Photo envoyée mais erreur de téléchargement]';
     }
   }
 
@@ -123,8 +154,8 @@ export async function handleWithAI(
   // Get conversation history
   const history: ConversationMessage[] = (session.data?.history as ConversationMessage[]) || [];
 
-  // Call Gemini
-  const aiResponse = await callGemini(userMessage, userContext, history, imageBuffer);
+  // Call Gemini (pass extracted doc info for context)
+  const aiResponse = await callGemini(userMessage, userContext, history, extractedDoc);
 
   if (!aiResponse) {
     await sendMessage(phone, "Désolé, une erreur s'est produite. Réessayez.");
@@ -141,13 +172,19 @@ export async function handleWithAI(
   // Execute action if needed
   const actionResult = await executeAction(phone, aiResponse, session);
 
-  // Update session with new data
+  // Update session with new data (include extracted doc info if available)
   await updateSession(phone, {
     state: session.state,
     landlord_id: actionResult.landlordId || session.landlord_id,
     data: {
       ...session.data,
       ...aiResponse.data,
+      // Store extracted doc info for later use
+      ...(extractedDoc && extractedDoc.confidence > 50 ? {
+        extracted_full_name: extractedDoc.fullName,
+        extracted_cni_number: extractedDoc.cniNumber,
+        extracted_doc_type: extractedDoc.documentType,
+      } : {}),
       history: trimmedHistory,
       language: aiResponse.language,
     },
@@ -192,7 +229,7 @@ async function callGemini(
   userMessage: string,
   userContext: string,
   history: ConversationMessage[],
-  imageBuffer: Buffer | null
+  extractedDoc: ExtractedDocument | null
 ): Promise<AIResponse | null> {
   if (!genAI) {
     console.error('[AI] Gemini not configured');
@@ -202,11 +239,26 @@ async function callGemini(
   try {
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-    // Build prompt
-    const prompt = SYSTEM_PROMPT.replace('{{USER_CONTEXT}}', userContext);
+    // Build prompt with extracted document info if available
+    let contextWithDoc = userContext;
+    if (extractedDoc && extractedDoc.confidence > 50) {
+      contextWithDoc += `\n\nDOCUMENT EXTRAIT PAR OCR (confiance: ${extractedDoc.confidence}%):
+- Type: ${extractedDoc.documentType}
+- Nom complet: ${extractedDoc.fullName}
+- Prénom: ${extractedDoc.firstName}
+- Nom: ${extractedDoc.lastName}
+- Numéro CNI: ${extractedDoc.cniNumber}
+- Date de naissance: ${extractedDoc.dateOfBirth}
+- Nationalité: ${extractedDoc.nationality}
+- Genre: ${extractedDoc.gender}
+
+IMPORTANT: Ces informations ont été extraites automatiquement. Utilise-les pour créer le compte si l'utilisateur confirme.`;
+    }
+
+    const prompt = SYSTEM_PROMPT.replace('{{USER_CONTEXT}}', contextWithDoc);
 
     // Build conversation
-    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+    const parts: Array<{ text: string }> = [];
 
     // System prompt
     parts.push({ text: prompt });
@@ -218,17 +270,6 @@ async function callGemini(
 
     // Current message
     parts.push({ text: `User: ${userMessage}` });
-
-    // Image if present
-    if (imageBuffer) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: imageBuffer.toString('base64'),
-        },
-      });
-      parts.push({ text: "Analyse cette photo de document d'identité et extrait les informations." });
-    }
 
     parts.push({ text: 'Assistant (JSON):' });
 
@@ -270,12 +311,24 @@ async function executeAction(
 
   switch (aiResponse.action) {
     case 'create_landlord': {
-      const { full_name, cni_number } = aiResponse.data as { full_name?: string; cni_number?: string };
+      // Try to get data from AI response, fallback to session extracted data
+      const aiData = aiResponse.data as { full_name?: string; cni_number?: string };
+      const sessionData = session.data as {
+        extracted_full_name?: string;
+        extracted_cni_number?: string;
+        full_name?: string;
+        cni_number?: string;
+      };
+
+      const full_name = aiData.full_name || sessionData.extracted_full_name || sessionData.full_name;
+      const cni_number = aiData.cni_number || sessionData.extracted_cni_number || sessionData.cni_number;
 
       if (!full_name || !cni_number) {
-        console.error('[AI] Missing data for create_landlord');
+        console.error('[AI] Missing data for create_landlord:', { full_name, cni_number });
         return {};
       }
+
+      console.log('[AI] Creating landlord with:', { full_name, cni_number });
 
       const { data: landlord, error } = await supabase
         .from('landlords')
