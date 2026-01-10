@@ -107,10 +107,13 @@ export async function handleWithAI(
     userMessage = buttonReply?.title || listReply?.title || 'Selection';
   } else if (message.type === 'image' && message.image?.id) {
     userMessage = '[Photo de document envoyée]';
+    console.log('[AI] Image object received:', JSON.stringify(message.image, null, 2));
     try {
       // WATI adds a URL field to the image object (not in base types)
       const imageWithUrl = message.image as { id: string; url?: string; mimeType?: string };
       const imageUrl = imageWithUrl.url;
+      console.log('[AI] Image URL:', imageUrl);
+      console.log('[AI] Image ID:', imageWithUrl.id);
       if (imageUrl) {
         console.log('[AI] Downloading image from URL:', imageUrl);
         imageBuffer = await downloadMediaFromUrl(imageUrl);

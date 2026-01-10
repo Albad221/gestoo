@@ -8,7 +8,9 @@ import type { WhatsAppMessage } from '@gestoo/types';
  * Receives incoming messages from WATI and routes them to the appropriate flow
  */
 export async function webhookHandler(req: Request, res: Response) {
+  console.log('[WEBHOOK] ========== RAW PAYLOAD ==========');
   console.log('[WEBHOOK] Received request:', JSON.stringify(req.body, null, 2));
+  console.log('[WEBHOOK] ================================');
 
   try {
     const payload = req.body as WatiWebhookPayload;
