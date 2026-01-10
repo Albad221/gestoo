@@ -13,8 +13,9 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
     "@gestoo/types": "workspace:*",
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.39.0",
     "express": "^4.18.2",
     "ioredis": "^5.3.2",
     "zod": "^3.22.4"

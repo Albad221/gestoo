@@ -2,7 +2,7 @@ import type { WhatsAppMessage, ChatbotSession, DocumentType } from '@gestoo/type
 import { updateSession } from '../lib/session.js';
 import { sendMessage, sendInteractiveButtons, downloadMedia } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
-import { extractDocumentData, isValidDocument, type DocumentType as OCRDocumentType } from '../lib/moondream.js';
+import { analyzeDocument, type DocumentAnalysisResult } from '../lib/gemini.js';
 import {
   verifyGuest,
   storeVerificationResult,
@@ -10,6 +10,8 @@ import {
   type VerificationResult,
   type RiskLevel,
 } from '../lib/verification.js';
+
+type OCRDocumentType = 'passport' | 'national_id' | 'residence_permit' | 'other';
 
 interface GuestData {
   firstName?: string;
@@ -198,11 +200,15 @@ async function handleDocumentUpload(
   session: ChatbotSession,
   guestData: GuestData
 ): Promise<void> {
+  const lang = session.data?.language || 'fr';
+  const isWolof = lang === 'wo';
+
   // Manual entry option
   if (message.type === 'text' && message.text?.body.toLowerCase() === 'manuel') {
-    await sendMessage(phone, `📝 Saisie manuelle
-
-Nom complet du client? (Prenom NOM)`);
+    const msg = isWolof
+      ? "📝 Bind ak loxo\n\nTur bu bees bi? (Prenom NOM)"
+      : "📝 Saisie manuelle\n\nNom complet du client? (Prenom NOM)";
+    await sendMessage(phone, msg);
     await updateSession(phone, {
       state: 'GUEST_CHECKIN_MANUAL_NAME',
       data: { ...session.data, guest: guestData },
@@ -211,16 +217,15 @@ Nom complet du client? (Prenom NOM)`);
   }
 
   if (message.type !== 'image' && message.type !== 'document') {
-    await sendMessage(
-      phone,
-      `📸 Envoyez une photo du document.
-
-Ou tapez 'manuel' pour saisir manuellement.`
-    );
+    const msg = isWolof
+      ? "📸 Yónne nataal document bi.\n\nWalla bind 'manuel' ngir bind ak loxo."
+      : "📸 Envoyez une photo du document.\n\nOu tapez 'manuel' pour saisir manuellement.";
+    await sendMessage(phone, msg);
     return;
   }
 
-  await sendMessage(phone, "⏳ Analyse du document...");
+  const analyzingMsg = isWolof ? "⏳ Yengi xool document bi..." : "⏳ Analyse du document...";
+  await sendMessage(phone, analyzingMsg);
 
   try {
     const mediaId = message.image?.id || message.document?.id;
@@ -228,37 +233,23 @@ Ou tapez 'manuel' pour saisir manuellement.`
 
     const imageBuffer = await downloadMedia(mediaId);
 
-    // Validate document
-    const validation = await isValidDocument(imageBuffer);
-    if (!validation.isValid && validation.confidence > 0.7) {
-      await sendMessage(
-        phone,
-        `⚠️ Image non reconnue comme document d'identite.
+    // Use Gemini AI for document analysis
+    console.log('[Check-in] Analyzing document with Gemini AI...');
+    const ocrResult = await analyzeDocument(imageBuffer);
 
-Renvoyez une photo claire ou tapez 'manuel'.`
-      );
+    if (!ocrResult.isValid || ocrResult.confidence < 0.5) {
+      const errorMsg = isWolof
+        ? `⚠️ Nataal bi duñu ko xam.\n\n${ocrResult.warnings.join('\n')}\n\nYónne nataal bu wér walla bind 'manuel'.`
+        : `⚠️ Image non reconnue comme document d'identite.\n\n${ocrResult.warnings.join('\n')}\n\nRenvoyez une photo claire ou tapez 'manuel'.`;
+      await sendMessage(phone, errorMsg);
       return;
     }
 
-    // Extract data with Moondream OCR
-    const ocrResult = await extractDocumentData(imageBuffer);
-
-    if (!ocrResult.success || !ocrResult.extractedData) {
-      await sendMessage(
-        phone,
-        `❌ Document illisible.
-
-1. Renvoyez une photo plus nette
-2. Tapez 'manuel' pour saisir`
-      );
-      return;
-    }
-
-    // Update guest data
+    // Update guest data from Gemini analysis
     const extracted = ocrResult.extractedData;
     guestData.firstName = extracted.firstName || extracted.fullName?.split(' ')[0];
     guestData.lastName = extracted.lastName || extracted.fullName?.split(' ').slice(1).join(' ');
-    guestData.documentType = ocrResult.documentType;
+    guestData.documentType = ocrResult.documentType as OCRDocumentType;
     guestData.documentNumber = extracted.documentNumber;
     guestData.nationality = extracted.nationality || extracted.issuingCountry;
     guestData.dateOfBirth = extracted.dateOfBirth;
