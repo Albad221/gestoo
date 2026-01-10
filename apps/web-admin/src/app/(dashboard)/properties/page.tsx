@@ -86,10 +86,46 @@ export default function PropertiesPage() {
   const [customReason, setCustomReason] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'split'>('list');
   const [stats, setStats] = useState({ registered: 0, scraped: 0, withPhone: 0, cities: 0 });
+  const [propertyDocuments, setPropertyDocuments] = useState<any[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
 
   useEffect(() => {
     fetchProperties();
   }, [statusFilter, typeFilter, sourceFilter]);
+
+  // Fetch documents when property is selected
+  useEffect(() => {
+    if (selectedProperty && selectedProperty.source === 'registered') {
+      fetchPropertyDocuments(selectedProperty.id);
+    } else {
+      setPropertyDocuments([]);
+    }
+  }, [selectedProperty]);
+
+  const fetchPropertyDocuments = async (propertyId: string) => {
+    setDocumentsLoading(true);
+    const supabase = createClient();
+
+    try {
+      const { data, error } = await supabase
+        .from('property_documents')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching documents:', error);
+        setPropertyDocuments([]);
+      } else {
+        setPropertyDocuments(data || []);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setPropertyDocuments([]);
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -977,6 +1013,97 @@ export default function PropertiesPage() {
                     })}
                   </p>
                 </div>
+
+                {/* Documents Section */}
+                {selectedProperty.source === 'registered' && (
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide flex items-center justify-between">
+                      <span>Documents soumis</span>
+                      {documentsLoading && (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      )}
+                    </p>
+                    {propertyDocuments.length > 0 ? (
+                      <div className="space-y-2">
+                        {propertyDocuments.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                                doc.document_type === 'cni' || doc.document_type === 'passport'
+                                  ? 'bg-blue-100 dark:bg-blue-900/30'
+                                  : doc.document_type === 'property_photo'
+                                  ? 'bg-green-100 dark:bg-green-900/30'
+                                  : 'bg-purple-100 dark:bg-purple-900/30'
+                              }`}>
+                                <span className={`material-symbols-outlined text-[20px] ${
+                                  doc.document_type === 'cni' || doc.document_type === 'passport'
+                                    ? 'text-blue-600 dark:text-blue-400'
+                                    : doc.document_type === 'property_photo'
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-purple-600 dark:text-purple-400'
+                                }`}>
+                                  {doc.document_type === 'cni' || doc.document_type === 'passport'
+                                    ? 'badge'
+                                    : doc.document_type === 'property_photo'
+                                    ? 'photo_camera'
+                                    : 'description'}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                                  {doc.document_type.replace('_', ' ')}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {new Date(doc.created_at).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
+                                {doc.ocr_confidence && (
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    OCR: {doc.ocr_confidence}%
+                                  </p>
+                                )}
+                              </div>
+                              <a
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px] text-gray-500 dark:text-gray-400">
+                                  open_in_new
+                                </span>
+                              </a>
+                            </div>
+                            {doc.extracted_data && (
+                              <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {doc.extracted_data.rawDescription?.substring(0, 100)}
+                                  {doc.extracted_data.rawDescription?.length > 100 ? '...' : ''}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                        <span className="material-symbols-outlined text-3xl text-gray-300 dark:text-gray-600">
+                          folder_off
+                        </span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Aucun document soumis
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">

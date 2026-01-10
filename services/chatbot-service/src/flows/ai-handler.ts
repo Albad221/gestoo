@@ -13,6 +13,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { analyzeImage, formatExtractedInfo, type ExtractedDocument } from '../lib/ocr.js';
 import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKey } from '../lib/wave.js';
 import { extractTextFromPDF, isPDF, formatPDFForAnalysis } from '../lib/pdf-converter.js';
+import { uploadDocument, mapCategoryToDocType, linkDocumentToProperty, getLandlordPendingDocuments } from '../lib/storage.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -166,6 +167,24 @@ export async function handleWithAI(
         console.log('[AI] OCR successful:', extractedDoc);
         // Use the new formatExtractedInfo for all document types
         userMessage = `[Photo de document envoyée - OCR réussi]\n${formatExtractedInfo(extractedDoc)}`;
+
+        // Upload document to storage
+        if (imageBuffer) {
+          const uploadResult = await uploadDocument({
+            buffer: imageBuffer,
+            mimeType: 'image/jpeg',
+            documentType: mapCategoryToDocType(extractedDoc.category),
+            landlordId: session.landlord_id,
+            extractedData: extractedDoc,
+          });
+          if (uploadResult.success) {
+            console.log('[AI] Document uploaded:', uploadResult.documentId);
+            // Store document ID in session for later linking
+            const pendingDocs = (session.data?.pending_document_ids as string[]) || [];
+            pendingDocs.push(uploadResult.documentId!);
+            session.data = { ...session.data, pending_document_ids: pendingDocs };
+          }
+        }
       } else {
         console.log('[AI] OCR failed or low confidence');
         userMessage = '[Photo de document envoyée - OCR échoué, impossible de lire le document]';
@@ -198,6 +217,21 @@ export async function handleWithAI(
           if (pdfInfo && pdfInfo.text.length > 50) {
             console.log('[AI] PDF text extracted successfully');
             userMessage = formatPDFForAnalysis(pdfInfo);
+
+            // Upload PDF to storage
+            const uploadResult = await uploadDocument({
+              buffer: docBuffer,
+              mimeType: 'application/pdf',
+              documentType: 'titre_propriete', // PDFs are typically property deeds
+              landlordId: session.landlord_id,
+              fileName: filename,
+            });
+            if (uploadResult.success) {
+              console.log('[AI] PDF uploaded:', uploadResult.documentId);
+              const pendingDocs = (session.data?.pending_document_ids as string[]) || [];
+              pendingDocs.push(uploadResult.documentId!);
+              session.data = { ...session.data, pending_document_ids: pendingDocs };
+            }
           } else {
             // If text extraction fails, try as image (first page)
             console.log('[AI] PDF text extraction failed, trying as image...');
@@ -212,6 +246,22 @@ export async function handleWithAI(
 
           if (extractedDoc && extractedDoc.confidence > 50) {
             userMessage = `[Document image reçu - OCR réussi]\n${formatExtractedInfo(extractedDoc)}`;
+
+            // Upload image document to storage
+            const uploadResult = await uploadDocument({
+              buffer: docBuffer,
+              mimeType: mimeType || 'image/jpeg',
+              documentType: mapCategoryToDocType(extractedDoc.category),
+              landlordId: session.landlord_id,
+              extractedData: extractedDoc,
+              fileName: filename,
+            });
+            if (uploadResult.success) {
+              console.log('[AI] Document image uploaded:', uploadResult.documentId);
+              const pendingDocs = (session.data?.pending_document_ids as string[]) || [];
+              pendingDocs.push(uploadResult.documentId!);
+              session.data = { ...session.data, pending_document_ids: pendingDocs };
+            }
           } else {
             userMessage = '[Document image reçu - OCR échoué]';
           }
@@ -640,7 +690,28 @@ async function executeAction(
 
       console.log(`[AI] Created homologation request: ${property.id}`);
 
-      // Notify user - note: this is now sent in addition to AI's response
+      // Link pending documents to the property
+      const pendingDocIds = (session.data?.pending_document_ids as string[]) || [];
+      if (pendingDocIds.length > 0) {
+        console.log(`[AI] Linking ${pendingDocIds.length} documents to property ${property.id}`);
+        for (const docId of pendingDocIds) {
+          await linkDocumentToProperty(docId, property.id);
+        }
+        // Clear pending document IDs from session
+        delete session.data?.pending_document_ids;
+      }
+
+      // Also link any documents uploaded for this landlord that don't have a property yet
+      if (landlordId) {
+        const unlinkedDocs = await getLandlordPendingDocuments(landlordId);
+        if (unlinkedDocs.length > 0) {
+          console.log(`[AI] Linking ${unlinkedDocs.length} unlinked landlord documents to property`);
+          for (const doc of unlinkedDocs) {
+            await linkDocumentToProperty(doc.id, property.id);
+          }
+        }
+      }
+
       console.log(`[AI] Homologation request created for property: ${propertyName} at ${address}, ${city}`);
 
       return {};
