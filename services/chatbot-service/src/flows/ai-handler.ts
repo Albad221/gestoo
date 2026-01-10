@@ -444,9 +444,53 @@ async function executeAction(
 
     case 'request_homologation': {
       // Create a property with status='pending' for admin review
-      if (!session.landlord_id) {
-        console.error('[AI] No landlord_id for homologation request');
-        return {};
+      let landlordId = session.landlord_id;
+
+      // If no landlord exists, try to create one first
+      if (!landlordId) {
+        const sessionData = session.data as {
+          extracted_full_name?: string;
+          extracted_nin?: string;
+          extracted_owner_name?: string;
+        };
+        const homologationData = aiResponse.data as { full_name?: string; nin?: string };
+
+        const fullName = homologationData.full_name || sessionData.extracted_full_name || sessionData.extracted_owner_name;
+
+        if (fullName) {
+          console.log('[AI] Auto-creating landlord for homologation:', fullName);
+
+          // Split full name
+          const nameParts = fullName.trim().split(' ');
+          const firstName = nameParts[0] || 'Prénom';
+          const lastName = nameParts.slice(1).join(' ') || 'Nom';
+
+          const { data: landlord, error: landlordError } = await supabase
+            .from('landlords')
+            .insert({
+              first_name: firstName,
+              last_name: lastName,
+              phone,
+              whatsapp_phone: phone,
+              national_id: homologationData.nin || sessionData.extracted_nin || null,
+            })
+            .select()
+            .single();
+
+          if (landlordError) {
+            console.error('[AI] Error auto-creating landlord:', landlordError);
+            return {};
+          }
+
+          landlordId = landlord.id;
+          console.log('[AI] Auto-created landlord:', landlordId);
+
+          // Update session with landlord_id
+          await updateSession(phone, { landlord_id: landlordId });
+        } else {
+          console.error('[AI] No landlord_id and no name to create one');
+          return {};
+        }
       }
 
       const aiData = aiResponse.data as {
@@ -454,7 +498,11 @@ async function executeAction(
         property_type?: string;
         address?: string;
         city?: string;
+        location?: string;
         num_rooms?: number;
+        full_name?: string;
+        surface?: string;
+        registration_number?: string;
       };
       const sessionData = session.data as {
         extracted_property_type?: string;
@@ -464,12 +512,31 @@ async function executeAction(
         extracted_property_address?: string;
       };
 
+      // Parse location if provided (e.g., "Fandène, Thiès")
+      let parsedAddress = aiData.address || sessionData.extracted_property_address;
+      let parsedCity = aiData.city;
+      if (aiData.location && !parsedCity) {
+        const locationParts = aiData.location.split(',').map(s => s.trim());
+        if (locationParts.length >= 2) {
+          parsedAddress = parsedAddress || locationParts[0];
+          parsedCity = locationParts[locationParts.length - 1];
+        } else {
+          parsedCity = locationParts[0];
+        }
+      }
+
       // Get property info from AI response or extracted OCR data
-      const propertyName = aiData.property_name || `Propriété de ${sessionData.extracted_owner_name || 'Bailleur'}`;
+      const ownerName = aiData.full_name || sessionData.extracted_owner_name || 'Bailleur';
+      const propertyName = aiData.property_name || `Propriété de ${ownerName}`;
       const propertyType = aiData.property_type || sessionData.extracted_property_type || 'apartment';
-      const address = aiData.address || sessionData.extracted_property_address || 'Adresse à confirmer';
-      const city = aiData.city || 'Dakar';
+      const address = parsedAddress || 'Adresse à confirmer';
+      const city = parsedCity || 'Dakar';
       const numRooms = aiData.num_rooms || sessionData.extracted_rooms || 1;
+      const description = [
+        sessionData.extracted_property_description,
+        aiData.surface ? `Surface: ${aiData.surface}` : null,
+        aiData.registration_number ? `N° enregistrement: ${aiData.registration_number}` : null,
+      ].filter(Boolean).join('\n') || null;
 
       // Map property type to valid enum
       const typeMapping: Record<string, string> = {
@@ -494,14 +561,14 @@ async function executeAction(
       const { data: property, error } = await supabase
         .from('properties')
         .insert({
-          landlord_id: session.landlord_id,
+          landlord_id: landlordId,
           name: propertyName,
           type: mappedType,
           status: 'pending',
           address,
           city,
           num_rooms: numRooms,
-          description: sessionData.extracted_property_description || null,
+          description,
         })
         .select()
         .single();
@@ -513,15 +580,8 @@ async function executeAction(
 
       console.log(`[AI] Created homologation request: ${property.id}`);
 
-      // Notify user
-      await sendMessage(
-        phone,
-        `📋 Votre demande d'homologation a été enregistrée!\n\n` +
-        `🏠 Propriété: ${propertyName}\n` +
-        `📍 ${address}, ${city}\n\n` +
-        `⏳ Votre demande est en cours d'examen par l'administration.\n` +
-        `Vous recevrez une notification une fois approuvée.`
-      );
+      // Notify user - note: this is now sent in addition to AI's response
+      console.log(`[AI] Homologation request created for property: ${propertyName} at ${address}, ${city}`);
 
       return {};
     }
