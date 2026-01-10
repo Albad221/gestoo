@@ -22,8 +22,8 @@ if (!GOOGLE_API_KEY) {
 
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
 
-// Use Gemini 2.0 Flash for fast, multimodal responses
-const MODEL_NAME = 'gemini-2.0-flash-exp';
+// Use Gemini 3 Flash for fast, multimodal responses with Wolof support
+const MODEL_NAME = 'gemini-3-flash-preview';
 
 // =============================================================================
 // SYSTEM PROMPTS
