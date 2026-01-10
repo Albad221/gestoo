@@ -909,23 +909,34 @@ export function getMediaUrl(fileName: string): string {
 export async function downloadMediaFromUrl(url: string): Promise<Buffer> {
   console.log('[WATI] Downloading media from URL:', url);
 
+  // Check if this is a WATI API URL or external URL (WhatsApp CDN)
+  const isWatiUrl = url.includes('wati.io') || url.includes(WATI_API_URL || '');
+
+  const headers: Record<string, string> = {};
+  if (isWatiUrl) {
+    headers['Authorization'] = `Bearer ${WATI_API_TOKEN}`;
+  }
+
+  console.log('[WATI] Using auth:', isWatiUrl);
+
   const response = await fetch(url, {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${WATI_API_TOKEN}`,
-    },
+    headers,
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[WATI] Download failed:', response.status, errorText);
     throw new WatiApiError(
       `Failed to download media: ${response.status}`,
       response.status,
-      { message: await response.text() },
+      { message: errorText },
       false
     );
   }
 
   const arrayBuffer = await response.arrayBuffer();
+  console.log('[WATI] Downloaded', arrayBuffer.byteLength, 'bytes');
   return Buffer.from(arrayBuffer);
 }
 
@@ -1206,22 +1217,29 @@ export function parseWatiWebhook(payload: WatiWebhookPayload): ParsedMessage {
       break;
 
     case 'image':
-      if (payload.data) {
+      console.log('[WATI] Parsing image payload:');
+      console.log('[WATI] - data:', payload.data);
+      console.log('[WATI] - sourceUrl:', payload.sourceUrl);
+      if (payload.data || payload.sourceUrl) {
         try {
-          const imageData = JSON.parse(payload.data);
+          const imageData = payload.data ? JSON.parse(payload.data) : {};
+          // Prefer sourceUrl (direct WhatsApp CDN URL) over constructed URL
+          const directUrl = payload.sourceUrl || imageData.url;
           result.image = {
-            id: imageData.id || imageData.fileName,
-            url: imageData.url || getMediaUrl(imageData.fileName),
+            id: imageData.id || imageData.fileName || payload.data || 'unknown',
+            url: directUrl || getMediaUrl(imageData.fileName),
             mimeType: imageData.mimeType || imageData.mime_type || 'image/jpeg',
             caption: imageData.caption,
           };
+          console.log('[WATI] - parsed image:', result.image);
         } catch {
-          // Handle non-JSON data format
+          // Handle non-JSON data format - use sourceUrl if available
           result.image = {
-            id: payload.data,
-            url: getMediaUrl(payload.data),
+            id: payload.data || 'unknown',
+            url: payload.sourceUrl || getMediaUrl(payload.data || ''),
             mimeType: 'image/jpeg',
           };
+          console.log('[WATI] - fallback image:', result.image);
         }
       }
       break;
