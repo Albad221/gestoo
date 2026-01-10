@@ -119,16 +119,14 @@ export default function PropertiesPage() {
         registeredQuery = registeredQuery.eq('type', typeFilter);
       }
 
-      // Fetch scraped listings
-      const scrapedQuery = supabase
-        .from('scraped_listings')
-        .select('id, title, city, address, latitude, longitude, rating, num_reviews, url, photos, raw_data, created_at, last_seen_at')
-        .eq('platform', 'google_places')
-        .order('created_at', { ascending: false });
+      // Fetch scraped listings via API (to bypass RLS)
+      const scrapedPromise = sourceFilter !== 'registered'
+        ? fetch('/api/etablissements').then(res => res.json()).then(data => ({ hotels: data.hotels || [] }))
+        : Promise.resolve({ hotels: [] });
 
       const [registeredResult, scrapedResult] = await Promise.all([
         sourceFilter !== 'scraped' ? registeredQuery.limit(100) : Promise.resolve({ data: [] }),
-        sourceFilter !== 'registered' ? scrapedQuery.limit(100) : Promise.resolve({ data: [] }),
+        scrapedPromise,
       ]);
 
       // Transform registered properties
@@ -138,7 +136,7 @@ export default function PropertiesPage() {
       }));
 
       // Transform scraped listings to match Property interface
-      const scrapedProperties: Property[] = ((scrapedResult.data || []) as any[]).map((h) => ({
+      const scrapedProperties: Property[] = ((scrapedResult.hotels || []) as any[]).map((h) => ({
         id: h.id,
         name: h.title,
         type: h.raw_data?.property_type || 'hotel',
