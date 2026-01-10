@@ -10,7 +10,7 @@ import { updateSession } from '../lib/session.js';
 import { sendMessage, sendInteractiveButtons, sendInteractiveList, downloadMediaFromUrl } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { extractDocumentInfo, type ExtractedDocument } from '../lib/ocr.js';
+import { analyzeImage, formatExtractedInfo, type ExtractedDocument } from '../lib/ocr.js';
 import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKey } from '../lib/wave.js';
 
 // =============================================================================
@@ -150,19 +150,13 @@ export async function handleWithAI(
       // Use GPT-4 Vision for OCR if we have the image
       if (imageBuffer) {
         console.log('[AI] Image downloaded, running OCR with GPT-4 Vision...');
-        extractedDoc = await extractDocumentInfo(imageBuffer);
+        extractedDoc = await analyzeImage(imageBuffer);
       }
 
       if (extractedDoc && extractedDoc.confidence > 50) {
         console.log('[AI] OCR successful:', extractedDoc);
-        userMessage = `[Photo de document envoyée - OCR réussi]
-Informations extraites:
-- Type: ${extractedDoc.documentType}
-- Nom: ${extractedDoc.lastName}
-- Prénom: ${extractedDoc.firstName}
-- NIN: ${extractedDoc.nin}
-- Date de naissance: ${extractedDoc.dateOfBirth}
-- Nationalité: ${extractedDoc.nationality}`;
+        // Use the new formatExtractedInfo for all document types
+        userMessage = `[Photo de document envoyée - OCR réussi]\n${formatExtractedInfo(extractedDoc)}`;
       } else {
         console.log('[AI] OCR failed or low confidence');
         userMessage = '[Photo de document envoyée - OCR échoué, impossible de lire le document]';
@@ -203,18 +197,41 @@ Informations extraites:
   const actionResult = await executeAction(phone, aiResponse, session);
 
   // Update session with new data (include extracted doc info if available)
+  // Build extracted data based on document category
+  const extractedData: Record<string, unknown> = {};
+  if (extractedDoc && extractedDoc.confidence > 50) {
+    extractedData.extracted_doc_category = extractedDoc.category;
+    extractedData.extracted_doc_type = extractedDoc.documentType;
+
+    switch (extractedDoc.category) {
+      case 'identity':
+        extractedData.extracted_full_name = extractedDoc.fullName;
+        extractedData.extracted_nin = extractedDoc.nin;
+        extractedData.extracted_dob = extractedDoc.dateOfBirth;
+        extractedData.extracted_nationality = extractedDoc.nationality;
+        break;
+      case 'property_photo':
+        extractedData.extracted_property_type = extractedDoc.propertyType;
+        extractedData.extracted_property_description = extractedDoc.propertyDescription;
+        extractedData.extracted_rooms = extractedDoc.estimatedRooms;
+        extractedData.extracted_condition = extractedDoc.condition;
+        break;
+      case 'property_deed':
+        extractedData.extracted_owner_name = extractedDoc.ownerName;
+        extractedData.extracted_property_address = extractedDoc.propertyAddress;
+        extractedData.extracted_property_area = extractedDoc.propertyArea;
+        extractedData.extracted_registration_number = extractedDoc.registrationNumber;
+        break;
+    }
+  }
+
   await updateSession(phone, {
     state: session.state,
     landlord_id: actionResult.landlordId || session.landlord_id,
     data: {
       ...session.data,
       ...aiResponse.data,
-      // Store extracted doc info for later use
-      ...(extractedDoc && extractedDoc.confidence > 50 ? {
-        extracted_full_name: extractedDoc.fullName,
-        extracted_nin: extractedDoc.nin,
-        extracted_doc_type: extractedDoc.documentType,
-      } : {}),
+      ...extractedData,
       history: trimmedHistory,
       language: aiResponse.language,
     },
@@ -272,17 +289,50 @@ async function callGemini(
     // Build prompt with extracted document info if available
     let contextWithDoc = userContext;
     if (extractedDoc && extractedDoc.confidence > 50) {
-      contextWithDoc += `\n\nDOCUMENT EXTRAIT PAR OCR (confiance: ${extractedDoc.confidence}%):
-- Type: ${extractedDoc.documentType}
-- Nom complet: ${extractedDoc.fullName}
-- Prénom: ${extractedDoc.firstName}
-- Nom: ${extractedDoc.lastName}
-- NIN (Numéro d'Identification Nationale): ${extractedDoc.nin}
-- Date de naissance: ${extractedDoc.dateOfBirth}
-- Nationalité: ${extractedDoc.nationality}
-- Genre: ${extractedDoc.gender}
+      contextWithDoc += `\n\nDOCUMENT EXTRAIT PAR OCR (confiance: ${extractedDoc.confidence}%):`;
+      contextWithDoc += `\nCatégorie: ${extractedDoc.category}`;
+      contextWithDoc += `\nType: ${extractedDoc.documentType}`;
+
+      switch (extractedDoc.category) {
+        case 'identity':
+          contextWithDoc += `
+- Nom complet: ${extractedDoc.fullName || 'Non extrait'}
+- Prénom: ${extractedDoc.firstName || 'Non extrait'}
+- Nom: ${extractedDoc.lastName || 'Non extrait'}
+- NIN (Numéro d'Identification Nationale): ${extractedDoc.nin || 'Non extrait'}
+- Date de naissance: ${extractedDoc.dateOfBirth || 'Non extrait'}
+- Nationalité: ${extractedDoc.nationality || 'Non extrait'}
+- Genre: ${extractedDoc.gender || 'Non extrait'}
 
 IMPORTANT: Ces informations ont été extraites automatiquement. Utilise le NIN (pas le numéro de carte) pour créer le compte si l'utilisateur confirme.`;
+          break;
+
+        case 'property_photo':
+          contextWithDoc += `
+- Type de bien: ${extractedDoc.propertyType || 'Non déterminé'}
+- Description: ${extractedDoc.propertyDescription || 'Non disponible'}
+- Pièces estimées: ${extractedDoc.estimatedRooms || 'Non déterminé'}
+- État: ${extractedDoc.condition || 'Non déterminé'}
+
+IMPORTANT: Cette photo montre le bien du bailleur. Utilise ces informations pour la demande d'homologation.`;
+          break;
+
+        case 'property_deed':
+          contextWithDoc += `
+- Nom propriétaire: ${extractedDoc.ownerName || 'Non extrait'}
+- Adresse du bien: ${extractedDoc.propertyAddress || 'Non extrait'}
+- Surface: ${extractedDoc.propertyArea || 'Non extrait'}
+- N° enregistrement: ${extractedDoc.registrationNumber || 'Non extrait'}
+- Date enregistrement: ${extractedDoc.registrationDate || 'Non extrait'}
+
+IMPORTANT: Ce document justifie la propriété ou le bail du bien. Utilise ces informations pour la demande d'homologation.`;
+          break;
+
+        default:
+          if (extractedDoc.rawDescription) {
+            contextWithDoc += `\nDescription: ${extractedDoc.rawDescription}`;
+          }
+      }
     }
 
     const prompt = SYSTEM_PROMPT.replace('{{USER_CONTEXT}}', contextWithDoc);

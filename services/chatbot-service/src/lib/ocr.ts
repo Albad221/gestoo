@@ -1,29 +1,59 @@
 /**
- * Document OCR using OpenAI GPT-4 Vision
+ * Document OCR and Image Analysis using OpenAI GPT-4 Vision
  *
- * Extracts identity information from passport and CNI photos
+ * Handles multiple document types:
+ * - CNI/Passport: Extract identity information
+ * - Property photos: Validate and describe property
+ * - Titre de propriété: Extract property ownership details
  */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type DocumentCategory = 'identity' | 'property_photo' | 'property_deed' | 'unknown';
+
 export interface ExtractedDocument {
-  documentType: 'passport' | 'cni' | 'other';
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  dateOfBirth: string;
-  nationality: string;
-  documentNumber: string;
-  nin: string; // National Identification Number (NIN) - the important one
-  gender: 'M' | 'F' | '';
-  placeOfBirth: string;
+  category: DocumentCategory;
+  documentType: string;
   confidence: number;
+  // Identity fields (CNI/Passport)
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  documentNumber?: string;
+  nin?: string;
+  gender?: string;
+  placeOfBirth?: string;
+  // Property photo fields
+  propertyType?: string;
+  propertyDescription?: string;
+  estimatedRooms?: number;
+  hasPool?: boolean;
+  hasTerrace?: boolean;
+  condition?: string;
+  // Property deed fields
+  ownerName?: string;
+  propertyAddress?: string;
+  propertyArea?: string;
+  registrationNumber?: string;
+  registrationDate?: string;
+  // Raw description for any document
+  rawDescription?: string;
 }
 
+// =============================================================================
+// MAIN ANALYSIS FUNCTION
+// =============================================================================
+
 /**
- * Extract identity information from a document image using GPT-4 Vision
+ * Analyze any image and extract relevant information based on document type
  */
-export async function extractDocumentInfo(imageBuffer: Buffer): Promise<ExtractedDocument | null> {
+export async function analyzeImage(imageBuffer: Buffer): Promise<ExtractedDocument | null> {
   if (!OPENAI_API_KEY) {
     console.error('[OCR] OpenAI API key not configured');
     return null;
@@ -33,7 +63,7 @@ export async function extractDocumentInfo(imageBuffer: Buffer): Promise<Extracte
     const base64 = imageBuffer.toString('base64');
     const mimeType = 'image/jpeg';
 
-    console.log('[OCR] Calling GPT-4 Vision for document extraction...');
+    console.log('[OCR] Calling GPT-4 Vision for image analysis...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -49,31 +79,62 @@ export async function extractDocumentInfo(imageBuffer: Buffer): Promise<Extracte
             content: [
               {
                 type: 'text',
-                text: `Tu es un système expert d'OCR pour documents d'identité sénégalais (CEDEAO) et passeports.
+                text: `Tu es un système expert d'analyse de documents pour une plateforme de gestion d'hébergements touristiques au Sénégal.
 
-Extrait TOUTES les informations de ce document d'identité.
+Analyse cette image et détermine son type, puis extrait les informations pertinentes.
 
-Retourne un objet JSON avec EXACTEMENT ces champs (utilise une chaîne vide si non trouvé):
+## TYPES DE DOCUMENTS POSSIBLES
+
+1. **DOCUMENT D'IDENTITÉ** (CNI CEDEAO, Passeport)
+   - Extrait: nom, prénom, NIN, date de naissance, nationalité, genre
+
+2. **PHOTO DE PROPRIÉTÉ** (Appartement, Maison, Chambre)
+   - Décrit: type de bien, nombre de pièces estimé, équipements visibles, état général
+
+3. **TITRE DE PROPRIÉTÉ / BAIL** (Document juridique)
+   - Extrait: nom propriétaire, adresse bien, superficie, numéro enregistrement
+
+4. **AUTRE** (Document non reconnu)
+   - Décrit brièvement ce que tu vois
+
+## FORMAT DE RÉPONSE (JSON)
+
 {
-  "documentType": "passport" ou "cni" ou "other",
-  "lastName": "NOM DE FAMILLE exactement comme écrit",
-  "firstName": "PRÉNOMS exactement comme écrits",
-  "dateOfBirth": "format YYYY-MM-DD",
-  "nationality": "Pays",
-  "documentNumber": "Numéro physique de la carte",
-  "nin": "Numéro d'Identification Nationale (NIN) - TRÈS IMPORTANT",
-  "gender": "M" ou "F",
-  "placeOfBirth": "Lieu de naissance"
+  "category": "identity" | "property_photo" | "property_deed" | "unknown",
+  "documentType": "description courte du type exact",
+  "confidence": 0-100,
+
+  // Pour identity (CNI/Passeport):
+  "firstName": "",
+  "lastName": "",
+  "nin": "",
+  "dateOfBirth": "YYYY-MM-DD",
+  "nationality": "",
+  "gender": "M" | "F" | "",
+  "placeOfBirth": "",
+
+  // Pour property_photo:
+  "propertyType": "appartement" | "maison" | "villa" | "chambre" | "studio",
+  "propertyDescription": "description détaillée",
+  "estimatedRooms": nombre,
+  "condition": "neuf" | "bon" | "moyen" | "à rénover",
+
+  // Pour property_deed:
+  "ownerName": "",
+  "propertyAddress": "",
+  "propertyArea": "",
+  "registrationNumber": "",
+  "registrationDate": "YYYY-MM-DD",
+
+  // Pour tous:
+  "rawDescription": "description brute de ce qui est visible"
 }
 
-IMPORTANT pour les CNI sénégalaises (carte CEDEAO biométrique):
-- Le NIN (Numéro d'Identification Nationale) est le numéro le plus important
-- Format NIN: généralement un long numéro comme "1 234 1990 12345" ou similaire
-- Le NIN est différent du numéro de la carte physique
-- Cherche "NIN" ou "N° Identification" sur la carte
-- Sur les nouvelles cartes CEDEAO, le NIN est souvent au dos ou près de la photo
-
-Retourne UNIQUEMENT du JSON valide, pas de markdown ni d'explication.`
+IMPORTANT:
+- Pour les CNI CEDEAO, le NIN est le numéro le plus important (pas le numéro de carte)
+- Pour les photos de propriété, décris ce que tu vois objectivement
+- Pour les titres de propriété, cherche les informations légales
+- Retourne UNIQUEMENT du JSON valide, pas de markdown`
               },
               {
                 type: 'image_url',
@@ -85,7 +146,7 @@ Retourne UNIQUEMENT du JSON valide, pas de markdown ni d'explication.`
             ]
           }
         ],
-        max_tokens: 1000,
+        max_tokens: 1500,
         temperature: 0,
       }),
     });
@@ -108,17 +169,36 @@ Retourne UNIQUEMENT du JSON valide, pas de markdown ni d'explication.`
     const parsed = JSON.parse(jsonStr);
 
     const extracted: ExtractedDocument = {
-      documentType: parsed.documentType || 'other',
-      firstName: parsed.firstName || '',
-      lastName: parsed.lastName || '',
-      fullName: `${parsed.firstName || ''} ${parsed.lastName || ''}`.trim(),
-      dateOfBirth: parsed.dateOfBirth || '',
-      nationality: parsed.nationality || '',
-      documentNumber: parsed.documentNumber || '',
-      nin: parsed.nin || parsed.NIN || '',
-      gender: parsed.gender || '',
-      placeOfBirth: parsed.placeOfBirth || '',
-      confidence: calculateConfidence(parsed),
+      category: parsed.category || 'unknown',
+      documentType: parsed.documentType || 'unknown',
+      confidence: parsed.confidence || 0,
+      // Identity fields
+      firstName: parsed.firstName,
+      lastName: parsed.lastName,
+      fullName: parsed.firstName && parsed.lastName
+        ? `${parsed.firstName} ${parsed.lastName}`.trim()
+        : undefined,
+      dateOfBirth: parsed.dateOfBirth,
+      nationality: parsed.nationality,
+      documentNumber: parsed.documentNumber,
+      nin: parsed.nin || parsed.NIN,
+      gender: parsed.gender,
+      placeOfBirth: parsed.placeOfBirth,
+      // Property photo fields
+      propertyType: parsed.propertyType,
+      propertyDescription: parsed.propertyDescription,
+      estimatedRooms: parsed.estimatedRooms,
+      hasPool: parsed.hasPool,
+      hasTerrace: parsed.hasTerrace,
+      condition: parsed.condition,
+      // Property deed fields
+      ownerName: parsed.ownerName,
+      propertyAddress: parsed.propertyAddress,
+      propertyArea: parsed.propertyArea,
+      registrationNumber: parsed.registrationNumber,
+      registrationDate: parsed.registrationDate,
+      // Raw
+      rawDescription: parsed.rawDescription,
     };
 
     console.log('[OCR] Extracted:', extracted);
@@ -130,22 +210,58 @@ Retourne UNIQUEMENT du JSON valide, pas de markdown ni d'explication.`
   }
 }
 
-function calculateConfidence(data: Record<string, string>): number {
-  const importantFields = [
-    'documentType',
-    'lastName',
-    'firstName',
-    'dateOfBirth',
-    'nin', // NIN is the most important field
-    'gender',
-  ];
+// =============================================================================
+// LEGACY FUNCTION (for backward compatibility)
+// =============================================================================
 
-  let fieldsFound = 0;
-  for (const field of importantFields) {
-    if (data[field] && data[field].trim() !== '') {
-      fieldsFound++;
-    }
+/**
+ * Extract identity information from a document image
+ * @deprecated Use analyzeImage instead
+ */
+export async function extractDocumentInfo(imageBuffer: Buffer): Promise<ExtractedDocument | null> {
+  return analyzeImage(imageBuffer);
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Format extracted document info for display in chat
+ */
+export function formatExtractedInfo(doc: ExtractedDocument): string {
+  const lines: string[] = [];
+
+  switch (doc.category) {
+    case 'identity':
+      lines.push(`📋 Document d'identité détecté (${doc.documentType})`);
+      if (doc.fullName) lines.push(`👤 Nom: ${doc.fullName}`);
+      if (doc.nin) lines.push(`🔢 NIN: ${doc.nin}`);
+      if (doc.dateOfBirth) lines.push(`📅 Date de naissance: ${doc.dateOfBirth}`);
+      if (doc.nationality) lines.push(`🌍 Nationalité: ${doc.nationality}`);
+      break;
+
+    case 'property_photo':
+      lines.push(`🏠 Photo de propriété détectée`);
+      if (doc.propertyType) lines.push(`📍 Type: ${doc.propertyType}`);
+      if (doc.estimatedRooms) lines.push(`🚪 Pièces estimées: ${doc.estimatedRooms}`);
+      if (doc.condition) lines.push(`✨ État: ${doc.condition}`);
+      if (doc.propertyDescription) lines.push(`📝 ${doc.propertyDescription}`);
+      break;
+
+    case 'property_deed':
+      lines.push(`📜 Titre de propriété détecté`);
+      if (doc.ownerName) lines.push(`👤 Propriétaire: ${doc.ownerName}`);
+      if (doc.propertyAddress) lines.push(`📍 Adresse: ${doc.propertyAddress}`);
+      if (doc.propertyArea) lines.push(`📐 Surface: ${doc.propertyArea}`);
+      if (doc.registrationNumber) lines.push(`🔢 N° enregistrement: ${doc.registrationNumber}`);
+      break;
+
+    default:
+      lines.push(`❓ Document non reconnu`);
+      if (doc.rawDescription) lines.push(doc.rawDescription);
   }
 
-  return Math.round((fieldsFound / importantFields.length) * 100);
+  lines.push(`\n📊 Confiance: ${doc.confidence}%`);
+  return lines.join('\n');
 }
