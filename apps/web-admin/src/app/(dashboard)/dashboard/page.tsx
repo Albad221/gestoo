@@ -51,6 +51,18 @@ interface Property {
   status: string;
   latitude: number;
   longitude: number;
+  type?: string;
+  source?: 'registered' | 'airbnb' | 'booking' | 'expedia' | 'other';
+}
+
+interface ScrapedListing {
+  id: string;
+  title: string;
+  platform: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+  is_compliant: boolean | null;
 }
 
 export default function AdminDashboardPage() {
@@ -83,6 +95,7 @@ export default function AdminDashboardPage() {
           { data: paymentsData },
           { data: staysData },
           { data: propertiesData },
+          { data: scrapedListingsData },
         ] = await Promise.all([
           supabase.from('properties').select('*', { count: 'exact', head: true }),
           supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'active'),
@@ -110,9 +123,14 @@ export default function AdminDashboardPage() {
             .order('check_in', { ascending: false })
             .limit(10),
           supabase.from('properties')
-            .select('id, name, status, latitude, longitude')
+            .select('id, name, status, latitude, longitude, type')
             .not('latitude', 'is', null)
             .not('longitude', 'is', null),
+          supabase.from('scraped_listings')
+            .select('id, title, platform, latitude, longitude, city, is_compliant')
+            .not('latitude', 'is', null)
+            .not('longitude', 'is', null)
+            .eq('is_active', true),
         ]);
 
         const totalRevenue = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
@@ -128,7 +146,24 @@ export default function AdminDashboardPage() {
         });
 
         setRecentCheckins((staysData as unknown as Stay[]) || []);
-        setProperties((propertiesData as unknown as Property[]) || []);
+
+        // Combine registered properties with scraped listings
+        const registeredProps: Property[] = (propertiesData || []).map((p: any) => ({
+          ...p,
+          source: 'registered' as const,
+        }));
+
+        const scrapedProps: Property[] = (scrapedListingsData || []).map((s: ScrapedListing) => ({
+          id: s.id,
+          name: s.title || 'Sans titre',
+          status: s.is_compliant ? 'compliant' : 'non-compliant',
+          latitude: s.latitude,
+          longitude: s.longitude,
+          type: s.platform,
+          source: s.platform as Property['source'],
+        }));
+
+        setProperties([...registeredProps, ...scrapedProps]);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -283,10 +318,10 @@ export default function AdminDashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-gray-900 dark:text-white text-lg font-bold leading-tight">
-                    Carte des propriétés
+                    Carte des hébergements
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {properties.length} propriétés géolocalisées
+                    {properties.length} hébergements (Airbnb, Booking, hôtels, etc.)
                   </p>
                 </div>
               </div>
