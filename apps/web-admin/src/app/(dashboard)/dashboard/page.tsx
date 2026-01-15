@@ -63,6 +63,11 @@ interface ScrapedListing {
   longitude: number;
   city: string;
   is_compliant: boolean | null;
+  rating: number | null;
+  raw_data: {
+    property_type?: string;
+    phone?: string;
+  } | null;
 }
 
 export default function AdminDashboardPage() {
@@ -127,10 +132,9 @@ export default function AdminDashboardPage() {
             .not('latitude', 'is', null)
             .not('longitude', 'is', null),
           supabase.from('scraped_listings')
-            .select('id, title, platform, latitude, longitude, city, is_compliant')
+            .select('id, title, platform, latitude, longitude, city, is_compliant, rating, raw_data')
             .not('latitude', 'is', null)
-            .not('longitude', 'is', null)
-            .eq('is_active', true),
+            .not('longitude', 'is', null),
         ]);
 
         const totalRevenue = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;

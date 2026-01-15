@@ -20,6 +20,7 @@ interface DashboardMapProps {
 // Platform colors and icons
 const platformConfig: Record<string, { color: string; icon: string; label: string }> = {
   registered: { color: '#22c55e', icon: 'verified', label: 'Enregistrées' },
+  google_places: { color: '#4285F4', icon: 'hotel', label: 'Google Hotels' },
   airbnb: { color: '#FF5A5F', icon: 'home', label: 'Airbnb' },
   booking: { color: '#003580', icon: 'hotel', label: 'Booking' },
   expedia: { color: '#FFCC00', icon: 'luggage', label: 'Expedia' },
@@ -31,7 +32,7 @@ const platformConfig: Record<string, { color: string; icon: string; label: strin
 export default function DashboardMap({ properties }: DashboardMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set(['registered', 'airbnb', 'booking', 'expedia', 'expat_dakar', 'mamaison', 'other']));
+  const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set(['registered', 'google_places', 'airbnb', 'booking', 'expedia', 'expat_dakar', 'mamaison', 'other']));
 
   // Count properties by source
   const sourceCounts = properties.reduce((acc, p) => {
