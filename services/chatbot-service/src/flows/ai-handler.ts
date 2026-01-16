@@ -403,8 +403,10 @@ export async function handleWithAI(
       });
 
       if (audioUrl) {
-        console.log('[AI] Sending TTS audio response');
-        await sendAudio(phone, audioUrl);
+        console.log('[AI] Sending TTS audio response to:', phone);
+        console.log('[AI] Audio URL:', audioUrl);
+        const audioResult = await sendAudio(phone, audioUrl);
+        console.log('[AI] TTS audio sent successfully:', JSON.stringify(audioResult));
       } else {
         console.log('[AI] TTS generation failed or storage unavailable, text response only');
       }

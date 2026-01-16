@@ -549,12 +549,16 @@ export async function sendVideo(
  */
 export async function sendAudio(to: string, audioUrl: string): Promise<WatiMessageResponse> {
   const phone = sanitizePhone(to);
+  console.log(`[WATI] sendAudio to ${phone}, URL: ${audioUrl}`);
 
-  return watiRequest<WatiMessageResponse>({
+  const result = await watiRequest<WatiMessageResponse>({
     method: 'POST',
     endpoint: `sendSessionFile/${phone}`,
     body: { url: audioUrl },
   });
+
+  console.log(`[WATI] sendAudio result:`, JSON.stringify(result));
+  return result;
 }
 
 /**
