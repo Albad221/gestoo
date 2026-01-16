@@ -7,7 +7,7 @@
 
 import type { WhatsAppMessage, ChatbotSession } from '@gestoo/types';
 import { updateSession } from '../lib/session.js';
-import { sendMessage, sendInteractiveButtons, sendInteractiveList, downloadMediaFromUrl } from '../lib/wati.js';
+import { sendMessage, sendInteractiveButtons, sendInteractiveList, downloadMediaFromUrl, sendAudio } from '../lib/wati.js';
 import { supabase } from '../lib/supabase.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { analyzeImage, formatExtractedInfo, type ExtractedDocument } from '../lib/ocr.js';
@@ -15,6 +15,7 @@ import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKe
 import { extractTextFromPDF, isPDF, formatPDFForAnalysis } from '../lib/pdf-converter.js';
 import { uploadDocument, mapCategoryToDocType, linkDocumentToProperty, getLandlordPendingDocuments } from '../lib/storage.js';
 import { transcribeAudio, SUPPORTED_LANGUAGES, type TranscriptionResult } from '../lib/asr.js';
+import { generateAndUploadTTS, shouldUseTTS, detectLanguageForTTS } from '../lib/tts.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -128,6 +129,7 @@ export async function handleWithAI(
   let userMessage = '';
   let imageBuffer: Buffer | null = null;
   let extractedDoc: ExtractedDocument | null = null;
+  let inputWasAudio = false; // Track if user sent voice message for TTS response
 
   if (message.type === 'text' && message.text?.body) {
     userMessage = message.text.body;
@@ -297,6 +299,7 @@ export async function handleWithAI(
 
         if (transcription.success && transcription.text) {
           userMessage = transcription.text;
+          inputWasAudio = true; // Mark that input was voice for TTS response
           console.log(`[AI] Audio transcribed successfully: "${userMessage}"`);
         } else {
           console.error('[AI] Transcription failed:', transcription.error);
@@ -387,6 +390,29 @@ export async function handleWithAI(
 
   // Send response
   await sendMessage(phone, aiResponse.response);
+
+  // Send TTS audio if user sent voice message and response is suitable
+  if (inputWasAudio && shouldUseTTS(inputWasAudio, aiResponse.response)) {
+    console.log('[AI] User sent voice message, generating TTS response...');
+    try {
+      const ttsLanguage = detectLanguageForTTS(aiResponse.response);
+      const audioUrl = await generateAndUploadTTS(aiResponse.response, phone, {
+        language: ttsLanguage,
+        voice: 'female',
+        style: 'warm',
+      });
+
+      if (audioUrl) {
+        console.log('[AI] Sending TTS audio response');
+        await sendAudio(phone, audioUrl);
+      } else {
+        console.log('[AI] TTS generation failed or storage unavailable, text response only');
+      }
+    } catch (ttsError) {
+      console.error('[AI] TTS error (non-fatal):', ttsError);
+      // Don't fail the response if TTS fails - text was already sent
+    }
+  }
 
   // Show menu for new landlords
   if (actionResult.showMenu) {
