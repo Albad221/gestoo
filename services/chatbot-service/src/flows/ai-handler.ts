@@ -14,7 +14,7 @@ import { analyzeImage, formatExtractedInfo, type ExtractedDocument } from '../li
 import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKey } from '../lib/wave.js';
 import { extractTextFromPDF, isPDF, formatPDFForAnalysis } from '../lib/pdf-converter.js';
 import { uploadDocument, mapCategoryToDocType, linkDocumentToProperty, getLandlordPendingDocuments } from '../lib/storage.js';
-import { transcribeFromUrl, SUPPORTED_LANGUAGES, type TranscriptionResult } from '../lib/asr.js';
+import { transcribeAudio, SUPPORTED_LANGUAGES, type TranscriptionResult } from '../lib/asr.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -284,10 +284,14 @@ export async function handleWithAI(
       const audioUrl = audio.url;
 
       if (audioUrl) {
-        console.log('[AI] Transcribing audio from URL:', audioUrl);
+        console.log('[AI] Downloading audio from URL:', audioUrl);
 
-        // Default to Wolof for Senegal, will auto-detect after first transcription
-        const transcription = await transcribeFromUrl(audioUrl, {
+        // Download audio using WATI's authenticated function
+        const audioBuffer = await downloadMediaFromUrl(audioUrl);
+        console.log(`[AI] Downloaded audio: ${audioBuffer.length} bytes`);
+
+        // Default to Wolof for Senegal
+        const transcription = await transcribeAudio(audioBuffer, 'audio.ogg', {
           languageCode: SUPPORTED_LANGUAGES.WOLOF,
         });
 
