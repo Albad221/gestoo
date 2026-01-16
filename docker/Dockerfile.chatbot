@@ -68,8 +68,8 @@ WORKDIR /app
 # Install pnpm for running the app
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Install wget for healthcheck and ffmpeg for TTS audio conversion
+RUN apk add --no-cache wget ffmpeg
 
 # Copy workspace files
 COPY --from=deps /app/node_modules ./node_modules
