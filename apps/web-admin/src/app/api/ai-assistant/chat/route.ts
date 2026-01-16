@@ -17,11 +17,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GOOGLE_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'API key not configured. Please add GOOGLE_API_KEY to environment variables.' } as ChatResponse,
+        { error: 'API key not configured. Please add GOOGLE_API_KEY or GEMINI_API_KEY to environment variables.' } as ChatResponse,
         { status: 500 }
       );
     }

@@ -6,7 +6,7 @@ export async function formatResponse(
   queryResult: QueryResult,
   originalQuestion: string
 ): Promise<string> {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
 
   if (!apiKey) {
     // Fallback to simple formatting if no API key
