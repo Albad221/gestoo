@@ -46,6 +46,8 @@ export async function webhookHandler(req: Request, res: Response) {
       text: message.text?.body,
       hasImage: !!message.image,
       hasDocument: !!message.document,
+      hasAudio: !!message.audio,
+      audioUrl: message.audio?.url,
     });
 
     // Process the message (cast to WhatsAppMessage as parsed message is compatible)
