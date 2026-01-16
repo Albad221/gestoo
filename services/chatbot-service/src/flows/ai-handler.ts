@@ -396,11 +396,14 @@ export async function handleWithAI(
     console.log('[AI] User sent voice message, generating TTS response...');
     try {
       const ttsLanguage = detectLanguageForTTS(aiResponse.response);
+      console.log(`[AI] TTS language detected: ${ttsLanguage}, text length: ${aiResponse.response.length}`);
+      console.log('[AI] Calling generateAndUploadTTS...');
       const audioUrl = await generateAndUploadTTS(aiResponse.response, phone, {
         language: ttsLanguage,
         voice: 'female',
         style: 'warm',
       });
+      console.log('[AI] generateAndUploadTTS returned:', audioUrl ? 'URL obtained' : 'null');
 
       if (audioUrl) {
         console.log('[AI] Sending TTS audio response to:', phone);

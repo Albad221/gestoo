@@ -153,12 +153,14 @@ export async function textToSpeech(
 
     console.log(`[TTS] Generating speech for: "${truncatedText.substring(0, 50)}${truncatedText.length > 50 ? '...' : ''}"`);
     console.log(`[TTS] Voice prompt: "${prompt}"`);
+    console.log(`[TTS] Calling Modal TTS API...`);
 
     // Send as form-urlencoded
     const params = new URLSearchParams();
     params.append('text', truncatedText);
     params.append('prompt', prompt);
 
+    const startTime = Date.now();
     const response = await axios.post(TTS_API_URL, params, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -166,6 +168,7 @@ export async function textToSpeech(
       responseType: 'arraybuffer',
       timeout: 180000, // 3 minute timeout for TTS generation
     });
+    console.log(`[TTS] API responded in ${Date.now() - startTime}ms`);
 
     const wavBuffer = Buffer.from(response.data);
     console.log(`[TTS] Generated ${wavBuffer.length} bytes of WAV audio`);
