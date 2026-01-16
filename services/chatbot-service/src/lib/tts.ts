@@ -6,6 +6,7 @@
  */
 
 import axios from 'axios';
+import FormData from 'form-data';
 import { supabase } from './supabase.js';
 import { spawn, execSync } from 'child_process';
 import { randomUUID } from 'crypto';
@@ -14,6 +15,7 @@ import { join } from 'path';
 import { writeFile, unlink, readFile } from 'fs/promises';
 
 const TTS_API_URL = 'https://andromeda--gemini-tts-app-factory.modal.run/tts/';
+const VOICE_CLONE_URL = 'https://andromeda--awa-voice-clone-app-factory.modal.run/clone_voice';
 
 export interface TTSResult {
   success: boolean;
@@ -118,6 +120,33 @@ async function convertWavToOgg(wavBuffer: Buffer): Promise<Buffer | null> {
 }
 
 /**
+ * Clone voice to Awa's voice using Modal endpoint
+ * Takes WAV audio and returns WAV in Awa's voice
+ */
+async function cloneToAwaVoice(wavBuffer: Buffer): Promise<Buffer> {
+  console.log('[TTS] Cloning to Awa voice...');
+
+  const formData = new FormData();
+  formData.append('file', wavBuffer, {
+    filename: 'input.wav',
+    contentType: 'audio/wav',
+  });
+
+  const startTime = Date.now();
+  const response = await axios.post(VOICE_CLONE_URL, formData, {
+    headers: formData.getHeaders(),
+    responseType: 'arraybuffer',
+    timeout: 180000, // 3 minute timeout
+  });
+
+  console.log(`[TTS] Voice cloning completed in ${Date.now() - startTime}ms`);
+  const clonedBuffer = Buffer.from(response.data);
+  console.log(`[TTS] Cloned audio: ${clonedBuffer.length} bytes`);
+
+  return clonedBuffer;
+}
+
+/**
  * Generate voice prompt based on options
  */
 function buildVoicePrompt(options: Required<TTSOptions>): string {
@@ -195,9 +224,18 @@ export async function textToSpeech(
     const wavBuffer = Buffer.from(response.data);
     console.log(`[TTS] Generated ${wavBuffer.length} bytes of WAV audio`);
 
+    // Clone to Awa's voice
+    let audioBuffer: Buffer;
+    try {
+      audioBuffer = await cloneToAwaVoice(wavBuffer);
+    } catch (cloneError: any) {
+      console.error('[TTS] Voice cloning failed, using original:', cloneError.message);
+      audioBuffer = wavBuffer;
+    }
+
     // Try to convert WAV to OGG (WhatsApp-compatible format)
     console.log('[TTS] Converting WAV to OGG...');
-    const oggBuffer = await convertWavToOgg(wavBuffer);
+    const oggBuffer = await convertWavToOgg(audioBuffer);
 
     if (oggBuffer) {
       console.log(`[TTS] Converted to ${oggBuffer.length} bytes of OGG audio`);
@@ -212,7 +250,7 @@ export async function textToSpeech(
     console.log('[TTS] Using WAV format (conversion unavailable)');
     return {
       success: true,
-      audioBuffer: wavBuffer,
+      audioBuffer: audioBuffer,
       mimeType: 'audio/wav',
     };
   } catch (error: any) {
