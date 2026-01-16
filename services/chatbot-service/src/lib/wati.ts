@@ -1282,19 +1282,31 @@ export function parseWatiWebhook(payload: WatiWebhookPayload): ParsedMessage {
     case 'audio':
     case 'voice':
       if (payload.data) {
-        try {
-          const audioData = JSON.parse(payload.data);
-          result.audio = {
-            id: audioData.id || audioData.fileName,
-            url: audioData.url || getMediaUrl(audioData.fileName),
-            mimeType: audioData.mimeType || audioData.mime_type || 'audio/ogg',
-          };
-        } catch {
+        // Check if data is already a full URL (WATI sends direct URLs for audio)
+        const isDataUrl = payload.data.startsWith('http');
+
+        if (isDataUrl) {
+          // data IS the URL - use it directly
           result.audio = {
             id: payload.data,
-            url: getMediaUrl(payload.data),
+            url: payload.data,  // Use directly, don't wrap in getMediaUrl
             mimeType: 'audio/ogg',
           };
+        } else {
+          try {
+            const audioData = JSON.parse(payload.data);
+            result.audio = {
+              id: audioData.id || audioData.fileName,
+              url: audioData.url || getMediaUrl(audioData.fileName),
+              mimeType: audioData.mimeType || audioData.mime_type || 'audio/ogg',
+            };
+          } catch {
+            result.audio = {
+              id: payload.data,
+              url: getMediaUrl(payload.data),
+              mimeType: 'audio/ogg',
+            };
+          }
         }
       }
       break;
