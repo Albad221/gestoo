@@ -23,6 +23,8 @@ RUN pnpm build
 # Production stage
 FROM base AS production
 ENV NODE_ENV=production
+# Install ffmpeg for TTS audio conversion (WAV to OGG)
+RUN apk add --no-cache ffmpeg
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
