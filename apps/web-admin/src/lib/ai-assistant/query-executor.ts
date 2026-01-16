@@ -44,7 +44,7 @@ export async function executeQuery(
     case 'get_alerts_summary':
       return getAlertsSummary(params as GetAlertsSummaryParams);
     case 'search_properties':
-      return searchProperties(params as SearchPropertiesParams);
+      return searchProperties(params as unknown as SearchPropertiesParams);
     default:
       throw new Error(`Unknown function: ${functionName}`);
   }
