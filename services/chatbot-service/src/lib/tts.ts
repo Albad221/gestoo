@@ -7,7 +7,7 @@
 
 import axios from 'axios';
 import { supabase } from './supabase.js';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { randomUUID } from 'crypto';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -35,10 +35,28 @@ const DEFAULT_OPTIONS: Required<TTSOptions> = {
 };
 
 /**
- * Convert WAV audio buffer to OGG format (WhatsApp-compatible)
- * Uses system ffmpeg installed via aptPkgs in nixpacks.toml
+ * Check if ffmpeg is available on the system
  */
-async function convertWavToOgg(wavBuffer: Buffer): Promise<Buffer> {
+function isFFmpegAvailable(): boolean {
+  try {
+    execSync('which ffmpeg', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Convert WAV audio buffer to OGG format (WhatsApp-compatible)
+ * Returns null if conversion fails (caller should use WAV as fallback)
+ */
+async function convertWavToOgg(wavBuffer: Buffer): Promise<Buffer | null> {
+  // Check if ffmpeg is available
+  if (!isFFmpegAvailable()) {
+    console.log('[TTS] FFmpeg not available, skipping conversion');
+    return null;
+  }
+
   const tempId = randomUUID();
   const inputPath = join(tmpdir(), `tts-input-${tempId}.wav`);
   const outputPath = join(tmpdir(), `tts-output-${tempId}.ogg`);
@@ -85,6 +103,9 @@ async function convertWavToOgg(wavBuffer: Buffer): Promise<Buffer> {
     console.log(`[TTS] Converted to ${oggBuffer.length} bytes of OGG audio`);
 
     return oggBuffer;
+  } catch (err: any) {
+    console.error('[TTS] Conversion failed:', err.message);
+    return null;
   } finally {
     // Clean up temp files
     try {
@@ -174,15 +195,25 @@ export async function textToSpeech(
     const wavBuffer = Buffer.from(response.data);
     console.log(`[TTS] Generated ${wavBuffer.length} bytes of WAV audio`);
 
-    // Convert WAV to OGG (WhatsApp-compatible format)
+    // Try to convert WAV to OGG (WhatsApp-compatible format)
     console.log('[TTS] Converting WAV to OGG...');
     const oggBuffer = await convertWavToOgg(wavBuffer);
-    console.log(`[TTS] Converted to ${oggBuffer.length} bytes of OGG audio`);
 
+    if (oggBuffer) {
+      console.log(`[TTS] Converted to ${oggBuffer.length} bytes of OGG audio`);
+      return {
+        success: true,
+        audioBuffer: oggBuffer,
+        mimeType: 'audio/ogg',
+      };
+    }
+
+    // Fallback to WAV if conversion failed
+    console.log('[TTS] Using WAV format (conversion unavailable)');
     return {
       success: true,
-      audioBuffer: oggBuffer,
-      mimeType: 'audio/ogg',
+      audioBuffer: wavBuffer,
+      mimeType: 'audio/wav',
     };
   } catch (error: any) {
     console.error('[TTS] Generation error:', error.message);
@@ -253,23 +284,26 @@ const TTS_BUCKET = 'tts-audio';
  *
  * @param audioBuffer - The audio buffer to upload
  * @param phone - User phone number (for folder organization)
+ * @param mimeType - The audio mime type (audio/ogg or audio/wav)
  * @returns Public URL of the uploaded audio or null
  */
 export async function uploadTTSAudio(
   audioBuffer: Buffer,
-  phone: string
+  phone: string,
+  mimeType: string = 'audio/ogg'
 ): Promise<string | null> {
   try {
     const timestamp = Date.now();
-    const fileName = `${phone}/${timestamp}.ogg`;
+    const ext = mimeType === 'audio/wav' ? 'wav' : 'ogg';
+    const fileName = `${phone}/${timestamp}.${ext}`;
 
-    console.log(`[TTS] Uploading audio to storage: ${fileName}`);
+    console.log(`[TTS] Uploading audio to storage: ${fileName} (${mimeType})`);
 
-    // Try to upload to Supabase storage (OGG format for WhatsApp compatibility)
+    // Try to upload to Supabase storage
     const { data, error } = await supabase.storage
       .from(TTS_BUCKET)
       .upload(fileName, audioBuffer, {
-        contentType: 'audio/ogg',
+        contentType: mimeType,
         upsert: true,
       });
 
@@ -315,8 +349,8 @@ export async function generateAndUploadTTS(
     return null;
   }
 
-  // Upload to storage
-  const audioUrl = await uploadTTSAudio(result.audioBuffer, phone);
+  // Upload to storage with correct mime type
+  const audioUrl = await uploadTTSAudio(result.audioBuffer, phone, result.mimeType);
 
   return audioUrl;
 }
