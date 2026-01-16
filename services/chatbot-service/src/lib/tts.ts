@@ -7,6 +7,14 @@
 
 import axios from 'axios';
 import { supabase } from './supabase.js';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
+import { Readable, PassThrough } from 'stream';
+
+// Set ffmpeg path from static binary
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+}
 
 const TTS_API_URL = 'https://andromeda--gemini-tts-app-factory.modal.run/tts/';
 
@@ -28,6 +36,40 @@ const DEFAULT_OPTIONS: Required<TTSOptions> = {
   language: 'fr',
   style: 'warm',
 };
+
+/**
+ * Convert WAV audio buffer to OGG format (WhatsApp-compatible)
+ */
+async function convertWavToOgg(wavBuffer: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+
+    // Create readable stream from buffer
+    const inputStream = new Readable();
+    inputStream.push(wavBuffer);
+    inputStream.push(null);
+
+    // Create output stream to collect data
+    const outputStream = new PassThrough();
+    outputStream.on('data', (chunk) => chunks.push(chunk));
+    outputStream.on('end', () => resolve(Buffer.concat(chunks)));
+    outputStream.on('error', reject);
+
+    // Convert using ffmpeg
+    ffmpeg(inputStream)
+      .inputFormat('wav')
+      .audioCodec('libopus')
+      .audioBitrate('64k')
+      .audioChannels(1)
+      .audioFrequency(48000)
+      .format('ogg')
+      .on('error', (err) => {
+        console.error('[TTS] FFmpeg conversion error:', err.message);
+        reject(err);
+      })
+      .pipe(outputStream, { end: true });
+  });
+}
 
 /**
  * Generate voice prompt based on options
@@ -100,15 +142,18 @@ export async function textToSpeech(
       timeout: 180000, // 3 minute timeout for TTS generation
     });
 
-    const audioBuffer = Buffer.from(response.data);
-    const contentType = response.headers['content-type'] || 'audio/wav';
+    const wavBuffer = Buffer.from(response.data);
+    console.log(`[TTS] Generated ${wavBuffer.length} bytes of WAV audio`);
 
-    console.log(`[TTS] Generated ${audioBuffer.length} bytes of audio (${contentType})`);
+    // Convert WAV to OGG (WhatsApp-compatible format)
+    console.log('[TTS] Converting WAV to OGG...');
+    const oggBuffer = await convertWavToOgg(wavBuffer);
+    console.log(`[TTS] Converted to ${oggBuffer.length} bytes of OGG audio`);
 
     return {
       success: true,
-      audioBuffer,
-      mimeType: contentType,
+      audioBuffer: oggBuffer,
+      mimeType: 'audio/ogg',
     };
   } catch (error: any) {
     console.error('[TTS] Generation error:', error.message);
@@ -187,15 +232,15 @@ export async function uploadTTSAudio(
 ): Promise<string | null> {
   try {
     const timestamp = Date.now();
-    const fileName = `${phone}/${timestamp}.wav`;
+    const fileName = `${phone}/${timestamp}.ogg`;
 
     console.log(`[TTS] Uploading audio to storage: ${fileName}`);
 
-    // Try to upload to Supabase storage
+    // Try to upload to Supabase storage (OGG format for WhatsApp compatibility)
     const { data, error } = await supabase.storage
       .from(TTS_BUCKET)
       .upload(fileName, audioBuffer, {
-        contentType: 'audio/wav',
+        contentType: 'audio/ogg',
         upsert: true,
       });
 
