@@ -143,7 +143,8 @@ export async function textToSpeech(
   }
 
   // Limit text length to avoid very long audio (shorter = faster TTS)
-  const maxLength = 300;
+  // Modal TTS API is slow: ~25s for short text, 60-90s for longer text
+  const maxLength = 150;
   const truncatedText = text.length > maxLength
     ? text.substring(0, maxLength) + '...'
     : text;
@@ -211,8 +212,8 @@ export function shouldUseTTS(
     return false;
   }
 
-  // Skip TTS for long responses (over 300 chars) to keep audio short
-  if (responseText.length > 300) {
+  // Skip TTS for long responses (over 200 chars) to keep audio short and fast
+  if (responseText.length > 200) {
     return false;
   }
 
