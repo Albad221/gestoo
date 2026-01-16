@@ -14,6 +14,7 @@ import { analyzeImage, formatExtractedInfo, type ExtractedDocument } from '../li
 import { getWaveClient, formatWaveAmount, formatWavePhone, generateIdempotencyKey } from '../lib/wave.js';
 import { extractTextFromPDF, isPDF, formatPDFForAnalysis } from '../lib/pdf-converter.js';
 import { uploadDocument, mapCategoryToDocType, linkDocumentToProperty, getLandlordPendingDocuments } from '../lib/storage.js';
+import { transcribeFromUrl, SUPPORTED_LANGUAGES, type TranscriptionResult } from '../lib/asr.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -274,6 +275,39 @@ export async function handleWithAI(
     } catch (e) {
       console.error('[AI] Failed to process document:', e);
       userMessage = '[Document reçu mais erreur de traitement]';
+    }
+  } else if ((message.type === 'audio' || message.type === 'voice') && message.audio) {
+    // Handle audio/voice messages with ASR transcription
+    console.log('[AI] Audio message received:', JSON.stringify(message.audio, null, 2));
+    try {
+      const audio = message.audio as { id: string; url?: string; mimeType?: string };
+      const audioUrl = audio.url;
+
+      if (audioUrl) {
+        console.log('[AI] Transcribing audio from URL:', audioUrl);
+
+        // Default to Wolof for Senegal, will auto-detect after first transcription
+        const transcription = await transcribeFromUrl(audioUrl, {
+          languageCode: SUPPORTED_LANGUAGES.WOLOF,
+        });
+
+        if (transcription.success && transcription.text) {
+          userMessage = transcription.text;
+          console.log(`[AI] Audio transcribed successfully: "${userMessage}"`);
+        } else {
+          console.error('[AI] Transcription failed:', transcription.error);
+          await sendMessage(phone, "🎙️ Désolé, je n'ai pas pu comprendre votre message vocal. Pouvez-vous réessayer ou m'écrire ?");
+          return;
+        }
+      } else {
+        console.log('[AI] No audio URL available');
+        await sendMessage(phone, "🎙️ Je n'ai pas pu accéder à votre message vocal. Pouvez-vous réessayer ?");
+        return;
+      }
+    } catch (e) {
+      console.error('[AI] Failed to process audio:', e);
+      await sendMessage(phone, "🎙️ Erreur lors du traitement de votre message vocal. Pouvez-vous réessayer ou m'écrire ?");
+      return;
     }
   }
 
