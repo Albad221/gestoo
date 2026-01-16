@@ -75,8 +75,8 @@ export async function textToSpeech(
     };
   }
 
-  // Limit text length to avoid very long audio
-  const maxLength = 500;
+  // Limit text length to avoid very long audio (shorter = faster TTS)
+  const maxLength = 300;
   const truncatedText = text.length > maxLength
     ? text.substring(0, maxLength) + '...'
     : text;
@@ -97,7 +97,7 @@ export async function textToSpeech(
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       responseType: 'arraybuffer',
-      timeout: 60000, // 1 minute timeout
+      timeout: 180000, // 3 minute timeout for TTS generation
     });
 
     const audioBuffer = Buffer.from(response.data);
@@ -138,8 +138,8 @@ export function shouldUseTTS(
     return false;
   }
 
-  // Skip TTS for very long responses (over 500 chars)
-  if (responseText.length > 500) {
+  // Skip TTS for long responses (over 300 chars) to keep audio short
+  if (responseText.length > 300) {
     return false;
   }
 
