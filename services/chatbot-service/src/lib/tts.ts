@@ -212,8 +212,8 @@ export function shouldUseTTS(
     return false;
   }
 
-  // Skip TTS for long responses (over 200 chars) to keep audio short and fast
-  if (responseText.length > 200) {
+  // Skip TTS for very long responses (over 500 chars)
+  if (responseText.length > 500) {
     return false;
   }
 
