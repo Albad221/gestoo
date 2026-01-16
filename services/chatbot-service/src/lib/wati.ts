@@ -551,10 +551,11 @@ export async function sendAudio(to: string, audioUrl: string): Promise<WatiMessa
   const phone = sanitizePhone(to);
   console.log(`[WATI] sendAudio to ${phone}, URL: ${audioUrl}`);
 
+  // Use sendSessionFileViaUrl endpoint for URL-based audio
   const result = await watiRequest<WatiMessageResponse>({
     method: 'POST',
-    endpoint: `sendSessionFile/${phone}`,
-    body: { url: audioUrl },
+    endpoint: `sendSessionFileViaUrl/${phone}`,
+    queryParams: { fileUrl: audioUrl },
   });
 
   console.log(`[WATI] sendAudio result:`, JSON.stringify(result));
