@@ -56,6 +56,12 @@ const navSections: NavSection[] = [
         roles: ['ministry', 'tax_authority', 'admin'],
       },
       {
+        href: '/ai-assistant',
+        label: 'Assistant IA',
+        icon: 'smart_toy',
+        roles: ['ministry', 'tax_authority', 'admin'],
+      },
+      {
         href: '/reports',
         label: 'Rapports',
         icon: 'description',
