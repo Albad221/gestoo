@@ -7,14 +7,11 @@
 
 import axios from 'axios';
 import { supabase } from './supabase.js';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-import { Readable, PassThrough } from 'stream';
-
-// Set ffmpeg path from static binary
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
-}
+import { spawn } from 'child_process';
+import { randomUUID } from 'crypto';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { writeFile, unlink, readFile } from 'fs/promises';
 
 const TTS_API_URL = 'https://andromeda--gemini-tts-app-factory.modal.run/tts/';
 
@@ -39,36 +36,64 @@ const DEFAULT_OPTIONS: Required<TTSOptions> = {
 
 /**
  * Convert WAV audio buffer to OGG format (WhatsApp-compatible)
+ * Uses system ffmpeg installed via aptPkgs in nixpacks.toml
  */
 async function convertWavToOgg(wavBuffer: Buffer): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
+  const tempId = randomUUID();
+  const inputPath = join(tmpdir(), `tts-input-${tempId}.wav`);
+  const outputPath = join(tmpdir(), `tts-output-${tempId}.ogg`);
 
-    // Create readable stream from buffer
-    const inputStream = new Readable();
-    inputStream.push(wavBuffer);
-    inputStream.push(null);
+  try {
+    // Write WAV to temp file
+    await writeFile(inputPath, wavBuffer);
 
-    // Create output stream to collect data
-    const outputStream = new PassThrough();
-    outputStream.on('data', (chunk) => chunks.push(chunk));
-    outputStream.on('end', () => resolve(Buffer.concat(chunks)));
-    outputStream.on('error', reject);
+    // Convert using system ffmpeg
+    await new Promise<void>((resolve, reject) => {
+      const ffmpegProcess = spawn('ffmpeg', [
+        '-i', inputPath,
+        '-c:a', 'libopus',
+        '-b:a', '64k',
+        '-ac', '1',
+        '-ar', '48000',
+        '-y',
+        outputPath,
+      ]);
 
-    // Convert using ffmpeg
-    ffmpeg(inputStream)
-      .inputFormat('wav')
-      .audioCodec('libopus')
-      .audioBitrate('64k')
-      .audioChannels(1)
-      .audioFrequency(48000)
-      .format('ogg')
-      .on('error', (err) => {
-        console.error('[TTS] FFmpeg conversion error:', err.message);
+      let stderr = '';
+
+      ffmpegProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      ffmpegProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          console.error('[TTS] FFmpeg stderr:', stderr);
+          reject(new Error(`ffmpeg exited with code ${code}`));
+        }
+      });
+
+      ffmpegProcess.on('error', (err) => {
+        console.error('[TTS] FFmpeg spawn error:', err.message);
         reject(err);
-      })
-      .pipe(outputStream, { end: true });
-  });
+      });
+    });
+
+    // Read converted file
+    const oggBuffer = await readFile(outputPath);
+    console.log(`[TTS] Converted to ${oggBuffer.length} bytes of OGG audio`);
+
+    return oggBuffer;
+  } finally {
+    // Clean up temp files
+    try {
+      await unlink(inputPath);
+      await unlink(outputPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
 }
 
 /**
